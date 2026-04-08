@@ -221,10 +221,9 @@ def build_chunks(path: Path) -> tuple[list[str], list[dict]]:
 
 def get_or_create_index(pc: Pinecone) -> object:
     """
-    Crée l'index Pinecone s'il n'existe pas encore.
-    Un index = une base vectorielle. On précise :
-    - dimension : taille des vecteurs (dépend du modèle d'embedding)
-    - metric    : comment on mesure la similarité (cosine = standard pour le texte)
+    Crée l'index Pinecone s'il n'existe pas, puis vide tous les vecteurs existants.
+    On repart toujours d'un index propre pour éviter que d'anciennes versions
+    de chunks (avec des IDs différents) restent dans la base après réingestion.
     """
     existing = [idx.name for idx in pc.list_indexes()]
     if INDEX_NAME not in existing:
@@ -236,6 +235,11 @@ def get_or_create_index(pc: Pinecone) -> object:
             spec=ServerlessSpec(cloud="aws", region="us-east-1"),
         )
         print("   → Index créé")
+    else:
+        print(f"🧹 Nettoyage de l'index existant '{INDEX_NAME}'...")
+        index = pc.Index(INDEX_NAME)
+        index.delete(delete_all=True)
+        print("   → Index vidé")
     return pc.Index(INDEX_NAME)
 
 
