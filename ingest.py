@@ -99,11 +99,15 @@ def extract_niveau(filename: str) -> str:
 
 def is_section_header(text: str, font_size: float, median_size: float) -> bool:
     text = text.strip()
-    # Trop court (lettre ou chiffre seul) ou trop long → pas un titre
+    # Trop court ou trop long → pas un titre
     if len(text) < 4 or len(text) > 200:
         return False
-    # Décoratif (tirets, symboles seuls)
-    if re.match(r"^[―—\-–•·]+$", text):
+    # Décoratif (tirets, symboles, chiffres seuls)
+    if re.match(r"^[―—\-–•·\d]+$", text):
+        return False
+    # Codes de certification FFESSM (N1, N2, PE20, PA40, MF1, MF2, BPJEPS...)
+    # Ces badges décoratifs ne sont pas des titres de section
+    if re.match(r"^(N\d|PE\d+|PA\d+|MF\d|E\d|GP|DP|BPJEPS|DEJEPS|BEPPA|RIFAP|TIV|ANTEOR)$", text):
         return False
     if font_size > median_size * 1.15:
         return True
