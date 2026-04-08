@@ -17,7 +17,7 @@ load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-N_RESULTS = 5
+N_RESULTS = 8
 
 NIVEAU_KEYWORDS = {
     "niveau 1": "N1", "n1": "N1", "pe20": "N1",

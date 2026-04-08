@@ -11,7 +11,7 @@ load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-N_RESULTS = 5
+N_RESULTS = 8
 
 # Mots-clés dans la question → tag de niveau pour le metadata filtering
 NIVEAU_KEYWORDS = {
