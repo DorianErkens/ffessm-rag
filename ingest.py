@@ -32,6 +32,37 @@ MAX_CHUNK_WORDS = 400
 OVERLAP_WORDS = 80   # ~20% d'overlap pour ne pas couper les infos de transition
 
 
+# ─── Nettoyage du texte extrait ───────────────────────────────────────────────
+
+def clean_text(text: str) -> str:
+    """
+    Les PDFs FFESSM utilisent une typo espacée : 'N I V E A U  1', 'P L O N G E U R  N I V E A U  1'.
+    - Espace simple  = séparation entre lettres d'un même mot
+    - Double espace  = séparation entre mots
+
+    Algorithme :
+    1. On découpe sur les doubles espaces → groupes de lettres
+    2. Si toutes les parties d'un groupe font ≤ 2 chars → c'est de la typo espacée → on recolle
+    3. On recolle les groupes avec un espace simple
+
+    'N I V E A U  1'           → ['N I V E A U', '1']     → 'NIVEAU 1'
+    'P L O N G E U R  N I V E A U' → ['PLONGEUR', 'NIVEAU'] → 'PLONGEUR NIVEAU'
+    'D É C E M B R E  2 0 2 5' → ['DÉCEMBRE', '2025']    → 'DÉCEMBRE 2025'
+    """
+    parts = re.split(r" {2,}", text)
+    cleaned_parts = []
+    for part in parts:
+        tokens = part.split(" ")
+        if len(tokens) > 2 and all(len(t) <= 2 for t in tokens if t):
+            cleaned_parts.append("".join(tokens))
+        else:
+            cleaned_parts.append(part)
+
+    result = " ".join(cleaned_parts)
+    result = re.sub(r"\n{3,}", "\n\n", result)
+    return result.strip()
+
+
 # ─── Extraction du niveau depuis le nom de fichier ────────────────────────────
 
 # Mapping explicite : nom de fichier (partiel) → tag de niveau
@@ -89,7 +120,7 @@ def extract_sections(path: Path) -> list[dict]:
                 continue
             for line in block["lines"]:
                 for span in line["spans"]:
-                    text = span["text"].strip()
+                    text = clean_text(span["text"].strip())
                     if text:
                         all_blocks.append({
                             "text": text,
