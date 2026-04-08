@@ -1,22 +1,29 @@
 """
-Étape 5 : Pipeline Q&A — recherche + génération avec Claude
+Pipeline Q&A : recherche dans Pinecone + génération avec Claude
 """
 import os
 import anthropic
-import chromadb
-from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
+from pinecone import Pinecone
 
 load_dotenv()
 
-CHROMA_DIR = "chroma_db"
-COLLECTION_NAME = "ffessm_mft"
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-N_RESULTS = 5  # nb de chunks récupérés par question
+INDEX_NAME = "ffessm-mft"
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+N_RESULTS = 5
+
+# Chargement du modèle une seule fois (évite de le recharger à chaque question)
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
 
 
 def build_prompt(question: str, contexts: list[str]) -> str:
-    """Construit le prompt avec les passages pertinents injectés."""
     context_block = "\n\n---\n\n".join(contexts)
     return f"""Tu es un assistant expert en plongée sous-marine et formations FFESSM.
 Réponds à la question en te basant UNIQUEMENT sur les extraits du Manuel de Formation Technique (MFT) fournis ci-dessous.
@@ -30,20 +37,38 @@ QUESTION : {question}
 RÉPONSE :"""
 
 
-def ask(question: str) -> str:
-    # 1. Connexion à ChromaDB
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-    ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBEDDING_MODEL
+def ask(question: str) -> tuple[str, list[str]]:
+    # 1. Embedding de la question avec le même modèle qu'à l'ingestion
+    model = get_model()
+    question_vector = model.encode(question).tolist()
+
+    # 2. Recherche dans Pinecone : renvoie les N chunks les plus proches
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index = pc.Index(INDEX_NAME)
+    results = index.query(
+        vector=question_vector,
+        top_k=N_RESULTS,
+        include_metadata=True,
     )
-    collection = client.get_collection(COLLECTION_NAME, embedding_function=ef)
 
-    # 2. Recherche sémantique : trouve les N chunks les plus proches
-    results = collection.query(query_texts=[question], n_results=N_RESULTS)
-    contexts = results["documents"][0]
-    sources = [m["source"] for m in results["metadatas"][0]]
+    # 3. Récupère le texte et les métadonnées depuis les résultats
+    matches = results["matches"]
+    contexts = [m["metadata"]["text"] for m in matches]
+    sources = []
+    seen = set()
+    for m in matches:
+        meta = m["metadata"]
+        key = (meta["source"], meta.get("section", ""), meta.get("page", ""))
+        if key not in seen:
+            seen.add(key)
+            label = meta["source"]
+            if meta.get("section"):
+                label += f" › {meta['section']}"
+            if meta.get("page"):
+                label += f" (p.{int(meta['page'])})"
+            sources.append(label)
 
-    # 3. Génération avec Claude
+    # 4. Génération avec Claude
     claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     message = claude.messages.create(
         model="claude-opus-4-6",
@@ -51,22 +76,7 @@ def ask(question: str) -> str:
         messages=[{"role": "user", "content": build_prompt(question, contexts)}],
     )
 
-    answer = message.content[0].text
-    # Formate les sources avec section + page si dispo
-    seen = set()
-    unique_sources = []
-    for m in results["metadatas"][0]:
-        key = (m["source"], m.get("section", ""), m.get("page", ""))
-        if key not in seen:
-            seen.add(key)
-            label = m["source"]
-            if m.get("section"):
-                label += f" › {m['section']}"
-            if m.get("page"):
-                label += f" (p.{m['page']})"
-            unique_sources.append(label)
-
-    return answer, unique_sources
+    return message.content[0].text, sources
 
 
 def main():
@@ -84,7 +94,7 @@ def main():
         print("\n📚 Sources :")
         for s in sources:
             print(f"   • {s}")
-        print()
+        print("\n" + "-" * 60 + "\n")
 
 
 if __name__ == "__main__":

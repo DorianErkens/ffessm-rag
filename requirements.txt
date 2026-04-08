@@ -1,5 +1,5 @@
 anthropic
 pymupdf
-chromadb
+pinecone
 sentence-transformers
 python-dotenv
