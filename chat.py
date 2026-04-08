@@ -52,7 +52,19 @@ def ask(question: str) -> str:
     )
 
     answer = message.content[0].text
-    unique_sources = list(dict.fromkeys(sources))  # déduplique en gardant l'ordre
+    # Formate les sources avec section + page si dispo
+    seen = set()
+    unique_sources = []
+    for m in results["metadatas"][0]:
+        key = (m["source"], m.get("section", ""), m.get("page", ""))
+        if key not in seen:
+            seen.add(key)
+            label = m["source"]
+            if m.get("section"):
+                label += f" › {m['section']}"
+            if m.get("page"):
+                label += f" (p.{m['page']})"
+            unique_sources.append(label)
 
     return answer, unique_sources
 
@@ -69,8 +81,10 @@ def main():
         print("\n🔍 Recherche en cours...")
         answer, sources = ask(question)
         print(f"\n💬 {answer}")
-        print(f"\n📚 Sources : {', '.join(sources)}\n")
-        print("-" * 60 + "\n")
+        print("\n📚 Sources :")
+        for s in sources:
+            print(f"   • {s}")
+        print()
 
 
 if __name__ == "__main__":
