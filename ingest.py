@@ -13,6 +13,7 @@ Pourquoi Pinecone plutôt que ChromaDB local ?
 """
 import os
 import re
+import unicodedata
 import fitz  # PyMuPDF
 from pathlib import Path
 from dotenv import load_dotenv
@@ -28,7 +29,39 @@ EMBEDDING_DIM = 384   # dimension des vecteurs produits par ce modèle
 BATCH_SIZE = 100      # nb de vecteurs envoyés à Pinecone en une seule requête
 
 MAX_CHUNK_WORDS = 400
-OVERLAP_WORDS = 50
+OVERLAP_WORDS = 80   # ~20% d'overlap pour ne pas couper les infos de transition
+
+
+# ─── Extraction du niveau depuis le nom de fichier ────────────────────────────
+
+# Mapping explicite : nom de fichier (partiel) → tag de niveau
+# Permet le metadata filtering dans Pinecone ("donne-moi seulement les chunks N2")
+NIVEAU_MAP = {
+    "Niveau 1": "N1", "PE20": "N1",
+    "Niveau 2": "N2", "PA20": "N2", "PE40": "N2",
+    "Niveau 3": "N3", "PA40": "N3", "PE60": "N3", "PA60": "N3",
+    "Niveau 4": "N4", "Guide de palanquée": "N4",
+    "Niveau 5": "N5", "Directeur de plongée": "N5",
+    "Initiateur": "Initiateur",
+    "MF1": "MF1", "Moniteur Fédéral 1": "MF1",
+    "MF2": "MF2", "Moniteur Fédéral 2": "MF2",
+    "BPJEPS": "BPJEPS", "DEJEPS": "DEJEPS", "BEPPA": "BEPPA",
+    "nitrox": "Nitrox", "trimix": "Trimix",
+    "recycleur circuit fermé": "Recycleur-CCR",
+    "recycleur circuit semi-fermé": "Recycleur-SCR",
+    "Sidemount": "Sidemount", "RIFAP": "RIFAP",
+    "PA12": "PA12", "PE12": "PE12",
+    "Jeunes": "Jeunes", "HANDISUB": "Handisub",
+    "Randonnée": "Randonnée-sub",
+}
+
+
+def extract_niveau(filename: str) -> str:
+    """Retourne le tag de niveau/catégorie à partir du nom de fichier."""
+    for keyword, tag in NIVEAU_MAP.items():
+        if keyword.lower() in filename.lower():
+            return tag
+    return "Général"
 
 
 # ─── Chunking ────────────────────────────────────────────────────────────────
@@ -125,12 +158,14 @@ def build_chunks(path: Path) -> tuple[list[str], list[dict]]:
 
     # On préfixe le titre au contenu : améliore la qualité de l'embedding
     texts = [f"[{c['title']}]\n{c['content']}" for c in all_chunks]
+    niveau = extract_niveau(path.name)
     metadatas = [
         {
-            "text": texts[i],       # on stocke le texte brut dans les métadonnées
-            "source": path.name,    # pour l'affichage des sources
+            "text": texts[i],
+            "source": path.name,
             "section": c["title"],
             "page": c["page"],
+            "niveau": niveau,   # permet le filtrage metadata dans Pinecone
         }
         for i, c in enumerate(all_chunks)
     ]
@@ -199,8 +234,11 @@ def ingest():
         # Génère les embeddings pour tous les chunks du PDF
         vectors = model.encode(texts, show_progress_bar=False)
 
-        # ID unique par chunk : nom_du_fichier_index
-        ids = [f"{pdf_path.stem}_{i}" for i in range(len(texts))]
+        # ID unique par chunk — Pinecone exige de l'ASCII pur
+        safe_stem = unicodedata.normalize("NFD", pdf_path.stem)
+        safe_stem = safe_stem.encode("ascii", "ignore").decode("ascii")
+        safe_stem = re.sub(r"[^a-zA-Z0-9_-]", "_", safe_stem)
+        ids = [f"{safe_stem}_{i}" for i in range(len(texts))]
 
         upsert_in_batches(index, ids, vectors, metadatas)
         print(f"   → {len(texts)} chunks indexés")
