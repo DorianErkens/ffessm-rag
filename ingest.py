@@ -99,7 +99,11 @@ def extract_niveau(filename: str) -> str:
 
 def is_section_header(text: str, font_size: float, median_size: float) -> bool:
     text = text.strip()
-    if not text or len(text) > 200:
+    # Trop court (lettre ou chiffre seul) ou trop long → pas un titre
+    if len(text) < 4 or len(text) > 200:
+        return False
+    # Décoratif (tirets, symboles seuls)
+    if re.match(r"^[―—\-–•·]+$", text):
         return False
     if font_size > median_size * 1.15:
         return True
