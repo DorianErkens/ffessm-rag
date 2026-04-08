@@ -189,11 +189,17 @@ def split_if_too_long(section: dict) -> list[dict]:
     return chunks
 
 
+MIN_CHUNK_WORDS = 30  # on ignore les chunks trop courts (titres seuls, résidus)
+
+
 def build_chunks(path: Path) -> tuple[list[str], list[dict]]:
     """Retourne (textes à embedder, métadonnées associées)."""
     all_chunks = []
     for section in extract_sections(path):
-        all_chunks.extend(split_if_too_long(section))
+        for chunk in split_if_too_long(section):
+            # Filtre les chunks sans contenu réel
+            if len(chunk["content"].split()) >= MIN_CHUNK_WORDS:
+                all_chunks.append(chunk)
 
     # On préfixe le titre au contenu : améliore la qualité de l'embedding
     texts = [f"[{c['title']}]\n{c['content']}" for c in all_chunks]
