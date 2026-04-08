@@ -3,3 +3,4 @@ pymupdf
 pinecone
 sentence-transformers
 python-dotenv
+streamlit
