@@ -1,6 +1,11 @@
-# FFESSM MFT RAG Chatbot
+# FFESSM MFT — Assistant Formation
 
 Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, construit avec un pipeline RAG (Retrieval-Augmented Generation).
+
+**Interface web** : `streamlit run app.py`  
+**Réindexer les docs** : `python ingest.py`
+
+---
 
 ## Architecture
 
@@ -8,34 +13,43 @@ Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, constr
 docs/*.pdf
     │
     ▼
-[ ingest.py ]
-    │  1. Extraction du texte (PyMuPDF)
-    │  2. Découpage en chunks
-    │  3. Création des embeddings (all-MiniLM-L6-v2, local)
-    │  4. Stockage dans ChromaDB (local, sur disque)
+[ ingest.py ] ─────────────────────────────────────────────────────
+    │  1. Extraction du texte page par page (PyMuPDF)
+    │  2. Détection des titres via taille de police → chunking par section
+    │  3. Re-découpage avec overlap si section > 400 mots
+    │  4. Préfixage du titre dans le texte → meilleur signal sémantique
+    │  5. Génération des embeddings (paraphrase-multilingual-MiniLM-L12-v2)
+    │  6. Stockage dans Pinecone avec métadonnées : source, section, page, niveau
     ▼
-[ chroma_db/ ]  ← base vectorielle persistante
+[ Pinecone (cloud) ] ← 4133 chunks indexés, accessibles depuis n'importe où
     │
-    │   Au moment d'une question :
+    │   À chaque question :
     │
     ▼
-[ chat.py ]
-    │  1. Embedding de la question
-    │  2. Recherche des 5 chunks les plus proches (similarité cosinus)
-    │  3. Injection des chunks dans le prompt
-    │  4. Génération de la réponse via Claude (Anthropic API)
+[ app.py / chat.py ] ──────────────────────────────────────────────
+    │  1. Détection du niveau mentionné dans la question (N1, N2, MF1…)
+    │  2. Embedding de la question avec le même modèle
+    │  3. Recherche des 5 chunks les plus proches (similarité cosinus)
+    │     → filtrage metadata Pinecone si niveau détecté
+    │  4. Injection des chunks dans le prompt Claude
+    │  5. Génération en streaming
     ▼
-[ Réponse + sources ]
+[ Réponse + sources (fichier › section › page) ]
 ```
+
+---
 
 ## Stack
 
-| Composant | Outil |
-|-----------|-------|
-| Extraction PDF | PyMuPDF (`fitz`) |
-| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (local, gratuit) |
-| Base vectorielle | ChromaDB (local) |
-| LLM | Claude claude-opus-4-6 (Anthropic API) |
+| Composant | Outil | Pourquoi |
+|-----------|-------|----------|
+| Extraction PDF | PyMuPDF (`fitz`) | Accès aux métadonnées typographiques (taille police) |
+| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` | Modèle multilingue, français natif |
+| Base vectorielle | Pinecone (cloud) | Persist entre déploiements, accessible depuis Streamlit Cloud |
+| LLM | Claude Opus 4.6 (Anthropic API) | Génération + streaming |
+| Interface web | Streamlit | Déploiement zero-infra |
+
+---
 
 ## Installation
 
@@ -50,28 +64,53 @@ pip install -r requirements.txt
 Créer un fichier `.env` :
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+PINECONE_API_KEY=pcsk_...
 ```
+
+---
 
 ## Usage
 
-### 1. Indexer les documents
-
-Placer les PDFs MFT dans le dossier `docs/`, puis :
-
+### Interface web
 ```bash
-python ingest.py
+streamlit run app.py
 ```
 
-### 2. Lancer le chatbot
-
+### Ligne de commande
 ```bash
 python chat.py
 ```
 
+### Réindexer les documents
+Placer les PDFs MFT dans `docs/`, puis :
+```bash
+python ingest.py
+```
+
+> L'ingestion est à faire une seule fois (ou quand les docs changent).  
+> L'index Pinecone persiste dans le cloud.
+
+---
+
+## Déploiement Streamlit Cloud
+
+1. Push le repo sur GitHub
+2. Aller sur [share.streamlit.io](https://share.streamlit.io)
+3. Connecter le repo, fichier principal : `app.py`
+4. Ajouter les secrets dans **Settings > Secrets** :
+```toml
+ANTHROPIC_API_KEY = "sk-ant-..."
+PINECONE_API_KEY = "pcsk_..."
+```
+
+---
+
 ## Concepts clés
 
-**RAG (Retrieval-Augmented Generation)** : au lieu de fine-tuner un LLM sur les MFTs (coûteux), on pré-indexe les documents sous forme de vecteurs. À chaque question, on récupère les passages les plus pertinents et on les injecte dans le contexte du LLM — qui génère alors une réponse ancrée dans les sources.
+**RAG (Retrieval-Augmented Generation)** : au lieu de fine-tuner un modèle sur les MFTs (coûteux), on pré-indexe les documents sous forme de vecteurs. À chaque question, on récupère les passages les plus pertinents et on les injecte dans le prompt — le LLM répond en s'appuyant sur ces extraits.
 
-**Embeddings** : représentation numérique du sens d'un texte. Deux phrases sémantiquement proches ont des vecteurs proches dans l'espace. C'est ce qui permet la recherche par sens et non par mot-clé.
+**Embeddings** : représentation numérique du sens d'un texte. Deux phrases sémantiquement proches ont des vecteurs proches dans l'espace. C'est ce qui permet la recherche par sens, pas par mot-clé.
 
-**Chunking** : les PDFs sont découpés en segments pour que chaque morceau indexé soit assez petit pour être précis, mais assez grand pour être cohérent.
+**Chunking sémantique** : on ne découpe pas les PDFs à l'aveugle par nombre de mots. PyMuPDF donne accès à la taille de police de chaque bloc — on s'en sert pour détecter les titres de section et couper aux frontières des idées.
+
+**Metadata filtering** : chaque chunk stocké dans Pinecone porte un tag `niveau` (N1, N2, MF1…). Quand une question mentionne un niveau, on filtre en amont de la recherche vectorielle — résultats bien plus précis.
