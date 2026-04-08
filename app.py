@@ -18,6 +18,7 @@ load_dotenv()
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 N_RESULTS = 8
+HISTORY_WINDOW = 3  # nb de tours de conversation passés injectés dans le prompt
 
 NIVEAU_KEYWORDS = {
     "niveau 1": "N1", "n1": "N1", "pe20": "N1",
@@ -45,10 +46,6 @@ def detect_niveau(question: str) -> str | None:
 
 @st.cache_resource
 def load_model():
-    """
-    @st.cache_resource : exécuté une seule fois, résultat mis en cache.
-    Évite de recharger le modèle d'embedding (300MB) à chaque question.
-    """
     return SentenceTransformer(EMBEDDING_MODEL)
 
 
@@ -58,27 +55,94 @@ def get_pinecone_index():
     return pc.Index(INDEX_NAME)
 
 
-def build_prompt(question: str, contexts: list[str]) -> str:
+def get_claude():
+    return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+
+# ─── Query rewriting ──────────────────────────────────────────────────────────
+
+def rewrite_query(question: str, history: list[dict]) -> str:
+    """
+    Reformule la question en tenant compte de l'historique de conversation.
+
+    Problème sans ça :
+      Tour 1 : "conditions d'accès au recycleur avec déco ?"
+      Tour 2 : "et les prérequis ?" → embedder "et les prérequis ?" tout seul
+               → la recherche ne sait pas qu'on parle du recycleur
+
+    Solution : on demande à Claude (appel rapide, non streamé) de produire
+    une question autonome qui incorpore le contexte.
+      → "Quels sont les prérequis pour la formation recycleur circuit fermé
+         avec décompression FFESSM ?"
+    """
+    if not history:
+        return question
+
+    # On ne garde que les N derniers tours pour le contexte
+    recent = history[-(HISTORY_WINDOW * 2):]
+    history_text = "\n".join(
+        f"{'Utilisateur' if m['role'] == 'user' else 'Assistant'}: {m['content'][:300]}"
+        for m in recent
+    )
+
+    prompt = f"""Voici une conversation sur les formations FFESSM :
+
+{history_text}
+
+Nouvelle question : {question}
+
+Si la nouvelle question est une suite ou une référence à la conversation (pronoms, "ça", "ce sujet", question courte sans contexte), reformule-la en une question autonome et complète qui incorpore le contexte nécessaire.
+Si la question est déjà autonome et claire, retourne-la telle quelle.
+Retourne UNIQUEMENT la question reformulée, sans explication."""
+
+    claude = get_claude()
+    response = claude.messages.create(
+        model="claude-haiku-4-5-20251001",  # modèle rapide pour le rewriting
+        max_tokens=150,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
+
+
+# ─── Pipeline RAG ─────────────────────────────────────────────────────────────
+
+def build_messages(question: str, contexts: list[str], history: list[dict]) -> list[dict]:
+    """
+    Construit les messages pour Claude avec :
+    - L'historique de conversation (HISTORY_WINDOW derniers tours)
+    - Le contexte MFT (chunks Pinecone) injecté dans le premier message système
+    - La question actuelle
+    """
     context_block = "\n\n---\n\n".join(contexts)
-    return f"""Tu es un assistant expert en plongée sous-marine et formations FFESSM.
-Réponds à la question en te basant UNIQUEMENT sur les extraits du Manuel de Formation Technique (MFT) fournis ci-dessous.
-Si la réponse n'est pas dans les extraits, dis-le clairement.
+    system_context = f"""Tu es un assistant expert en plongée sous-marine et formations FFESSM.
+Réponds en te basant UNIQUEMENT sur les extraits du Manuel de Formation Technique (MFT) fournis.
+Si la réponse n'est pas dans les extraits, dis-le clairement sans inventer.
 
-EXTRAITS MFT :
-{context_block}
+EXTRAITS MFT PERTINENTS :
+{context_block}"""
 
-QUESTION : {question}
+    messages = []
 
-RÉPONSE :"""
+    # Historique des tours précédents
+    for msg in history[-(HISTORY_WINDOW * 2):]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # Question actuelle
+    messages.append({"role": "user", "content": question})
+
+    return system_context, messages
 
 
-def ask(question: str) -> tuple[str, list[str]]:
+def ask(question: str, history: list[dict]) -> tuple:
     model = load_model()
     index = get_pinecone_index()
 
-    # Recherche vectorielle avec filtrage niveau si détecté
-    question_vector = model.encode(question).tolist()
-    niveau = detect_niveau(question)
+    # 1. Rewrite la question avec le contexte conversationnel
+    search_query = rewrite_query(question, history)
+
+    # 2. Recherche vectorielle
+    question_vector = model.encode(search_query).tolist()
+    niveau = detect_niveau(question) or detect_niveau(search_query)
     query_kwargs = {
         "vector": question_vector,
         "top_k": N_RESULTS,
@@ -91,24 +155,25 @@ def ask(question: str) -> tuple[str, list[str]]:
     matches = results["matches"]
 
     if not matches:
-        return "Aucun extrait pertinent trouvé dans les MFTs.", []
+        return (lambda: iter(["Aucun extrait pertinent trouvé dans les MFTs."])), [], search_query
 
     contexts = [m["metadata"]["text"] for m in matches]
 
-    # Génération avec Claude en streaming
-    claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    # 3. Génération avec Claude en streaming + historique
+    claude = get_claude()
+    system_context, messages = build_messages(question, contexts, history)
 
-    # st.write_stream consomme un générateur → on yield les tokens au fur et à mesure
     def stream_response():
         with claude.messages.stream(
             model="claude-opus-4-6",
             max_tokens=1024,
-            messages=[{"role": "user", "content": build_prompt(question, contexts)}],
+            system=system_context,
+            messages=messages,
         ) as stream:
             for text in stream.text_stream:
                 yield text
 
-    # Sources
+    # 4. Sources
     seen, sources = set(), []
     for m in matches:
         meta = m["metadata"]
@@ -122,7 +187,7 @@ def ask(question: str) -> tuple[str, list[str]]:
                 label += f" (p.{int(meta['page'])})"
             sources.append(label)
 
-    return stream_response, sources
+    return stream_response, sources, search_query
 
 
 # ─── UI ───────────────────────────────────────────────────────────────────────
@@ -136,7 +201,6 @@ st.set_page_config(
 st.title("🤿 Assistant MFT FFESSM")
 st.caption("Posez vos questions sur les formations et brevets de plongée FFESSM")
 
-# Initialise l'historique du chat dans la session
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -152,20 +216,23 @@ for msg in st.session_state.messages:
 # Input utilisateur
 if question := st.chat_input("Ex : Quelles sont les conditions pour le Niveau 2 ?"):
 
-    # Affiche la question
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
 
-    # Génère et affiche la réponse en streaming
     with st.chat_message("assistant"):
-        niveau = detect_niveau(question)
+        # On passe l'historique sans le dernier message (la question courante)
+        history = st.session_state.messages[:-1]
+
+        stream_fn, sources, rewritten = ask(question, history)
+
+        # Affiche la query reformulée si elle diffère de l'originale
+        niveau = detect_niveau(question) or detect_niveau(rewritten)
         if niveau:
             st.caption(f"🔍 Recherche filtrée sur : **{niveau}**")
+        if rewritten.strip().lower() != question.strip().lower():
+            st.caption(f"🔄 Question reformulée : *{rewritten}*")
 
-        stream_fn, sources = ask(question)
-
-        # write_stream affiche les tokens au fur et à mesure et retourne le texte complet
         full_response = st.write_stream(stream_fn)
 
         if sources:
