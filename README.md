@@ -3,7 +3,8 @@
 Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, construit avec un pipeline RAG (Retrieval-Augmented Generation).
 
 **Interface web** : `streamlit run app.py`  
-**Réindexer les docs** : `python ingest.py`
+**Réindexer les docs** : `python ingest.py`  
+**Tests** : `pytest tests/`
 
 ---
 
@@ -13,23 +14,24 @@ Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, constr
 docs/*.pdf
     │
     ▼
-[ ingest.py ] ─────────────────────────────────────────────────────
+[ ingest.py ] ─────────────────────────────────────────────────────────────
     │  1. Extraction du texte page par page (PyMuPDF)
-    │  2. Détection des titres via taille de police → chunking par section
-    │  3. Re-découpage avec overlap si section > 400 mots
-    │  4. Préfixage du titre dans le texte → meilleur signal sémantique
-    │  5. Génération des embeddings (paraphrase-multilingual-MiniLM-L12-v2)
-    │  6. Stockage dans Pinecone avec métadonnées : source, section, page, niveau
+    │  2. Nettoyage de la typo espacée ("N I V E A U" → "NIVEAU")
+    │  3. Détection des titres de section via taille de police
+    │  4. Chunking sémantique par section (overlap 80 mots)
+    │  5. Filtrage des chunks < 30 mots (artefacts de mise en page)
+    │  6. Génération des embeddings (paraphrase-multilingual-MiniLM-L12-v2)
+    │  7. Nettoyage de l'index Pinecone puis upload des vecteurs
     ▼
-[ Pinecone (cloud) ] ← 4133 chunks indexés, accessibles depuis n'importe où
+[ Pinecone (cloud) ] ← ~1200 chunks propres, accessibles depuis n'importe où
     │
     │   À chaque question :
     │
     ▼
-[ app.py / chat.py ] ──────────────────────────────────────────────
-    │  1. Détection du niveau mentionné dans la question (N1, N2, MF1…)
-    │  2. Embedding de la question avec le même modèle
-    │  3. Recherche des 5 chunks les plus proches (similarité cosinus)
+[ app.py / chat.py ] ──────────────────────────────────────────────────────
+    │  1. Détection du niveau dans la question (N1, N2, MF1…)
+    │  2. Embedding de la question
+    │  3. Recherche des 8 chunks les plus proches (similarité cosinus)
     │     → filtrage metadata Pinecone si niveau détecté
     │  4. Injection des chunks dans le prompt Claude
     │  5. Génération en streaming
@@ -44,8 +46,8 @@ docs/*.pdf
 | Composant | Outil | Pourquoi |
 |-----------|-------|----------|
 | Extraction PDF | PyMuPDF (`fitz`) | Accès aux métadonnées typographiques (taille police) |
-| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` | Modèle multilingue, français natif |
-| Base vectorielle | Pinecone (cloud) | Persist entre déploiements, accessible depuis Streamlit Cloud |
+| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` | Multilingue, français natif, gratuit |
+| Base vectorielle | Pinecone (cloud) | Persiste entre déploiements, accessible depuis Streamlit Cloud |
 | LLM | Claude Opus 4.6 (Anthropic API) | Génération + streaming |
 | Interface web | Streamlit | Déploiement zero-infra |
 
@@ -87,8 +89,13 @@ Placer les PDFs MFT dans `docs/`, puis :
 python ingest.py
 ```
 
-> L'ingestion est à faire une seule fois (ou quand les docs changent).  
-> L'index Pinecone persiste dans le cloud.
+> L'ingestion vide l'index Pinecone et repart de zéro à chaque exécution.
+> Ne lancer qu'en cas de mise à jour des documents.
+
+### Lancer les tests
+```bash
+pytest tests/ -v
+```
 
 ---
 
@@ -102,6 +109,47 @@ python ingest.py
 ANTHROPIC_API_KEY = "sk-ant-..."
 PINECONE_API_KEY = "pcsk_..."
 ```
+
+---
+
+## Historique des bugs — spécificités des PDFs FFESSM
+
+Les MFTs FFESSM ont une mise en page complexe qui a nécessité plusieurs corrections.
+Ces bugs sont couverts par les tests dans `tests/test_ingest.py`.
+
+### Bug #1 — Typographie espacée
+**Symptôme** : Chunks contenant `N I V E A U  1` au lieu de `NIVEAU 1`. Embeddings dégradés, recherches qui ratent.  
+**Cause** : Les titres décoratifs des PDFs espacent chaque lettre. PyMuPDF extrait le texte tel quel.  
+**Fix** : `clean_text()` détecte les séquences de lettres isolées séparées par des espaces simples et les recolle. Les doubles espaces marquent les frontières de mots.
+
+### Bug #2 — Caractères isolés détectés comme titres de section
+**Symptôme** : Chunks avec titre `[N]` et contenu commençant par `4 ...`.  
+**Cause** : Dans le PDF, "N" et "4" apparaissent comme spans typographiques séparés. "N" a une police large → détecté comme titre.  
+**Fix** : `is_section_header()` exige `len(text) >= 4`.
+
+### Bug #3 — Codes de certification détectés comme titres
+**Symptôme** : Chunks `[PE40]`, `[MF1]`, `[PA20]` avec contenu `)` — fragments inutilisables.  
+**Cause** : Ces badges décoratifs (tout en majuscules, courts) passaient le filtre "isupper + <= 10 mots".  
+**Fix** : Regex d'exclusion explicite des codes FFESSM dans `is_section_header()`.
+
+### Bug #4 — Symboles décoratifs détectés comme titres
+**Symptôme** : Sections découpées à chaque `―` (tiret long décoratif).  
+**Fix** : Exclusion des textes composés uniquement de symboles `[―—\-–•·\d]`.
+
+### Bug #5 — Chunks vides indexés et remontés en recherche
+**Symptôme** : Claude répondait "les extraits ne contiennent aucune information exploitable". Les chunks récupérés étaient des titres seuls ou des cellules de tableau d'un mot.  
+**Cause** : Toutes les sections étaient indexées, y compris les micro-fragments.  
+**Fix** : Filtre `MIN_CHUNK_WORDS = 30` — les chunks dont le contenu fait moins de 30 mots sont ignorés.
+
+### Bug #6 — IDs non-ASCII rejetés par Pinecone
+**Symptôme** : `PineconeApiException: Vector ID must be ASCII` sur les PDFs avec accents dans le nom.  
+**Cause** : Les IDs Pinecone doivent être en ASCII pur. Nos IDs étaient construits depuis les noms de fichiers (`vêtement étanche_0`).  
+**Fix** : `unicodedata.normalize("NFD")` + `encode("ascii", "ignore")` + `re.sub` des caractères restants.
+
+### Bug #7 — Chunks obsolètes persistant dans Pinecone
+**Symptôme** : Après correction du chunking, les anciens chunks bugués revenaient encore dans les résultats.  
+**Cause** : `index.upsert()` ne supprime pas les vecteurs existants — il ajoute ou met à jour par ID. Les anciens chunks avec des IDs différents restaient en base indéfiniment.  
+**Fix** : `index.delete(delete_all=True)` au début de chaque ingestion pour repartir d'un index vide.
 
 ---
 
