@@ -24,8 +24,8 @@ load_dotenv()
 
 DOCS_DIR = Path("docs")
 INDEX_NAME = "ffessm-mft"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # modèle multilingue (fr/en)
-EMBEDDING_DIM = 384   # dimension des vecteurs produits par ce modèle
+EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"  # modèle multilingue, 768 dims, meilleur que MiniLM
+EMBEDDING_DIM = 768   # dimension des vecteurs produits par ce modèle
 BATCH_SIZE = 100      # nb de vecteurs envoyés à Pinecone en une seule requête
 
 MAX_CHUNK_WORDS = 400
@@ -222,12 +222,12 @@ def build_chunks(path: Path) -> tuple[list[str], list[dict]]:
 def get_or_create_index(pc: Pinecone) -> object:
     """
     Crée l'index Pinecone s'il n'existe pas, puis vide tous les vecteurs existants.
-    On repart toujours d'un index propre pour éviter que d'anciennes versions
-    de chunks (avec des IDs différents) restent dans la base après réingestion.
+    Si la dimension de l'index existant ne correspond pas (changement de modèle),
+    supprime et recrée l'index avec la bonne dimension.
     """
-    existing = [idx.name for idx in pc.list_indexes()]
+    existing = {idx.name: idx for idx in pc.list_indexes()}
     if INDEX_NAME not in existing:
-        print(f"🔧 Création de l'index Pinecone '{INDEX_NAME}'...")
+        print(f"🔧 Création de l'index Pinecone '{INDEX_NAME}' ({EMBEDDING_DIM} dims)...")
         pc.create_index(
             name=INDEX_NAME,
             dimension=EMBEDDING_DIM,
@@ -236,10 +236,23 @@ def get_or_create_index(pc: Pinecone) -> object:
         )
         print("   → Index créé")
     else:
-        print(f"🧹 Nettoyage de l'index existant '{INDEX_NAME}'...")
-        index = pc.Index(INDEX_NAME)
-        index.delete(delete_all=True)
-        print("   → Index vidé")
+        current_dim = existing[INDEX_NAME].dimension
+        if current_dim != EMBEDDING_DIM:
+            print(f"⚠️  Dimension mismatch ({current_dim} → {EMBEDDING_DIM}), suppression et recréation...")
+            pc.delete_index(INDEX_NAME)
+            import time; time.sleep(10)  # attendre la suppression effective
+            pc.create_index(
+                name=INDEX_NAME,
+                dimension=EMBEDDING_DIM,
+                metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            )
+            print("   → Index recréé")
+        else:
+            print(f"🧹 Nettoyage de l'index existant '{INDEX_NAME}'...")
+            index = pc.Index(INDEX_NAME)
+            index.delete(delete_all=True)
+            print("   → Index vidé")
     return pc.Index(INDEX_NAME)
 
 

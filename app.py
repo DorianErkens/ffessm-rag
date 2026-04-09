@@ -16,7 +16,7 @@ from pinecone import Pinecone
 load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
 N_RESULTS = 12
 HISTORY_WINDOW = 3  # nb de tours de conversation passés injectés dans le prompt
 
