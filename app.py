@@ -17,7 +17,7 @@ load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-N_RESULTS = 8
+N_RESULTS = 12
 HISTORY_WINDOW = 3  # nb de tours de conversation passés injectés dans le prompt
 
 NIVEAU_KEYWORDS = {
@@ -192,17 +192,51 @@ def ask(question: str, history: list[dict]) -> tuple:
 
 # ─── UI ───────────────────────────────────────────────────────────────────────
 
+SUGGESTED_QUESTIONS = [
+    "Conditions d'accès au Niveau 2 ?",
+    "Prérogatives du Guide de Palanquée (N4) ?",
+    "Quelles sont les compétences requises pour le MF1 ?",
+    "Différence entre PA40 et PE40 ?",
+    "Conditions pour plonger en autonomie à 60 m ?",
+]
+
 st.set_page_config(
     page_title="FFESSM MFT — Assistant formation",
     page_icon="🤿",
     layout="centered",
 )
 
+with st.sidebar:
+    st.markdown("## 🤿 Assistant MFT FFESSM")
+    st.markdown("Posez vos questions sur les formations et brevets de plongée FFESSM.")
+    st.divider()
+    if st.button("🔄 Nouvelle conversation", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+    st.divider()
+    st.caption("Basé sur les Manuels de Formation Technique (MFT) FFESSM.")
+
 st.title("🤿 Assistant MFT FFESSM")
 st.caption("Posez vos questions sur les formations et brevets de plongée FFESSM")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# Suggestions si aucun message
+if not st.session_state.messages:
+    st.markdown("**Questions fréquentes :**")
+    cols = st.columns(2)
+    for i, q in enumerate(SUGGESTED_QUESTIONS):
+        if cols[i % 2].button(q, key=f"suggestion_{i}", use_container_width=True):
+            st.session_state._suggested = q
+            st.rerun()
+
+# Question suggérée sélectionnée
+if hasattr(st.session_state, "_suggested") and st.session_state._suggested:
+    question_from_suggestion = st.session_state._suggested
+    st.session_state._suggested = None
+else:
+    question_from_suggestion = None
 
 # Affiche l'historique
 for msg in st.session_state.messages:
@@ -214,7 +248,9 @@ for msg in st.session_state.messages:
                     st.markdown(f"- {s}")
 
 # Input utilisateur
-if question := st.chat_input("Ex : Quelles sont les conditions pour le Niveau 2 ?"):
+_chat_input = st.chat_input("Ex : Quelles sont les conditions pour le Niveau 2 ?")
+question = question_from_suggestion or _chat_input
+if question:
 
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):

@@ -1,5 +1,7 @@
 # FFESSM MFT — Assistant Formation
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ffessm-rag.streamlit.app)
+
 Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, construit avec un pipeline RAG (Retrieval-Augmented Generation).
 
 **Interface web** : `streamlit run app.py`  
