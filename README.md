@@ -104,11 +104,18 @@ pytest tests/ -v
 1. Push le repo sur GitHub
 2. Aller sur [share.streamlit.io](https://share.streamlit.io)
 3. Connecter le repo, fichier principal : `app.py`
-4. Ajouter les secrets dans **Settings > Secrets** :
+4. **Manage app** (en bas à droite) → **Settings** → **Secrets**
+5. Coller les secrets au format TOML — **chaque clé doit tenir sur une seule ligne, sans retour à la ligne dans la valeur** :
+
 ```toml
 ANTHROPIC_API_KEY = "sk-ant-..."
 PINECONE_API_KEY = "pcsk_..."
 ```
+
+> **Piège fréquent** : si vous copiez-collez depuis un terminal ou un PDF, des retours à la ligne peuvent s'insérer au milieu de la clé → erreur `Invalid format: please enter valid TOML`. Vérifiez que chaque ligne est continue du `=` jusqu'au guillemet fermant.
+
+6. **Save** → l'app redémarre automatiquement (~1 min)
+7. Premier démarrage : ~3 min (téléchargement du modèle `sentence-transformers`)
 
 ---
 
