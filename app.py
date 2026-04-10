@@ -21,14 +21,14 @@ load_dotenv()
 # et envoie la trace (prompt, réponse, tokens, latence) à Langsmith.
 # Activé uniquement si LANGCHAIN_API_KEY est défini (transparent sinon).
 # Dashboard : https://smith.langchain.com → projet "ffessm-mft"
-_langsmith_enabled = bool(os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY"))
+_langsmith_api_key = os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY")
+_langsmith_enabled = bool(_langsmith_api_key)
 if _langsmith_enabled:
-    if not os.getenv("LANGSMITH_API_KEY") and os.getenv("LANGCHAIN_API_KEY"):
-        os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-    os.environ.setdefault("LANGSMITH_PROJECT", "ffessm-mft")
-    # Instance EU — wrap_anthropic utilise LANGSMITH_ENDPOINT
-    os.environ.setdefault("LANGSMITH_ENDPOINT", "https://eu.api.smith.langchain.com")
-    os.environ.setdefault("LANGCHAIN_ENDPOINT", "https://eu.api.smith.langchain.com")
+    # Forcer l'endpoint EU avant tout import langsmith (les var sont lues à l'import)
+    os.environ["LANGSMITH_API_KEY"] = _langsmith_api_key
+    os.environ["LANGSMITH_ENDPOINT"] = "https://eu.api.smith.langchain.com"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://eu.api.smith.langchain.com"
+    os.environ["LANGSMITH_PROJECT"] = "ffessm-mft"
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
