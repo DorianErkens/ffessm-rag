@@ -134,13 +134,15 @@ PINECONE_API_KEY = "pcsk_..."
 | **Faithfulness** | La réponse s'appuie-t-elle sur les chunks ? | Claude hallucine (invente des infos) |
 | **Answer Relevancy** | La réponse répond-elle vraiment à la question ? | Réponses vagues ou hors-sujet |
 
-### Résultats actuels (8 chunks, filtre `$in [niveau, "Général"]`)
+### Évolution des scores
 
-| Métrique | Score |
-|---|---|
-| Context Recall | 0.59 |
-| Faithfulness | 0.62 |
-| Answer Relevancy | 0.78 |
+| Run | Config | Context Recall | Faithfulness | Answer Relevancy |
+|---|---|---|---|---|
+| 1 | 8 chunks, filtre `$eq` | 0.53 | 0.62 | 0.70 |
+| 2 | 12 chunks, filtre `$in` + Général | 0.59 | 0.45 | 0.78 |
+| 3 | 8 chunks, filtre `$in` + Général + **eval fixée** | **0.70** | **0.72** | **0.74** |
+
+> Run 1→3 : la majorité du gain vient de la correction du bug dans `evaluate.py` (retrieve sans filtre), pas d'un changement du pipeline applicatif. Les runs 1 et 2 mesuraient partiellement une fausse version du pipeline.
 
 ### Décisions de design issues de l'évaluation
 
