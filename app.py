@@ -21,10 +21,12 @@ load_dotenv()
 # et envoie la trace (prompt, réponse, tokens, latence) à Langsmith.
 # Activé uniquement si LANGCHAIN_API_KEY est défini (transparent sinon).
 # Dashboard : https://smith.langchain.com → projet "ffessm-mft"
-_langsmith_enabled = bool(os.getenv("LANGCHAIN_API_KEY"))
+_langsmith_enabled = bool(os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY"))
 if _langsmith_enabled:
-    os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
-    os.environ.setdefault("LANGCHAIN_PROJECT", "ffessm-mft")
+    # wrap_anthropic utilise LANGSMITH_API_KEY en priorité
+    if not os.getenv("LANGSMITH_API_KEY") and os.getenv("LANGCHAIN_API_KEY"):
+        os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+    os.environ.setdefault("LANGSMITH_PROJECT", "ffessm-mft")
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
