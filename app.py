@@ -26,7 +26,8 @@ if _langsmith_enabled:
     if not os.getenv("LANGSMITH_API_KEY") and os.getenv("LANGCHAIN_API_KEY"):
         os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
     os.environ.setdefault("LANGSMITH_PROJECT", "ffessm-mft")
-    # Instance EU — sans ça les traces partent sur l'endpoint US → 403
+    # Instance EU — wrap_anthropic utilise LANGSMITH_ENDPOINT
+    os.environ.setdefault("LANGSMITH_ENDPOINT", "https://eu.api.smith.langchain.com")
     os.environ.setdefault("LANGCHAIN_ENDPOINT", "https://eu.api.smith.langchain.com")
 
 INDEX_NAME = "ffessm-mft"
