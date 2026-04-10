@@ -17,7 +17,7 @@ load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
-N_RESULTS = 12
+N_RESULTS = 8  # 12 injectait trop de bruit → faithfulness dégradée (eval RAGAS-like)
 HISTORY_WINDOW = 3  # nb de tours de conversation passés injectés dans le prompt
 
 NIVEAU_KEYWORDS = {

@@ -28,6 +28,7 @@ Questions dont on connaît la réponse attendue, extraites des MFTs FFESSM.
 C'est le socle de toute évaluation RAG : sans référence, on ne peut rien mesurer.
 """
 import os
+import re
 import json
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
@@ -38,7 +39,31 @@ load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
-N_RESULTS = 12
+N_RESULTS = 8  # aligné avec app.py
+
+# Reproduction exacte du detect_niveau de app.py
+# Critique : si evaluate.py n'applique pas le même filtre que l'app,
+# les scores d'évaluation ne reflètent pas le comportement réel.
+NIVEAU_KEYWORDS = {
+    "niveau 1": "N1", "n1": "N1", "pe20": "N1",
+    "niveau 2": "N2", "n2": "N2", "pa20": "N2", "pe40": "N2",
+    "niveau 3": "N3", "n3": "N3", "pa40": "N3", "pe60": "N3", "pa60": "N3",
+    "niveau 4": "N4", "n4": "N4", "guide de palanquée": "N4",
+    "niveau 5": "N5", "n5": "N5",
+    "initiateur": "Initiateur",
+    "mf1": "MF1", "moniteur 1": "MF1",
+    "mf2": "MF2", "moniteur 2": "MF2",
+    "nitrox": "Nitrox", "trimix": "Trimix",
+    "rifap": "RIFAP", "sidemount": "Sidemount",
+}
+
+
+def detect_niveau(question: str) -> str | None:
+    q = question.lower()
+    for keyword, tag in NIVEAU_KEYWORDS.items():
+        if keyword in q:
+            return tag
+    return None
 
 # ─── Golden dataset ───────────────────────────────────────────────────────────
 # Format : question + réponse de référence (ground truth)
@@ -89,11 +114,35 @@ GOLDEN_DATASET = [
 ]
 
 
+def parse_score(text: str) -> tuple[float, str]:
+    """Extrait score et justification — trouve le premier { ... } dans la réponse."""
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start == -1 or end == 0:
+        raise ValueError("no JSON object found")
+    data = json.loads(text[start:end])
+    return float(data["score"]), data.get("justification", "")
+
+
 # ─── Pipeline RAG (retrieval uniquement) ─────────────────────────────────────
 
 def retrieve(question: str, model, index) -> list[str]:
+    """
+    Reproduit exactement la logique de app.py :
+    - Détection du niveau dans la question
+    - Si niveau détecté : filtre $in [niveau, "Général"]
+      (inclure "Général" = règles fédérales transversales applicables à tous)
+    - Sinon : pas de filtre
+
+    Bug corrigé : l'ancienne version ne filtrait pas → les chunks RIFAP (score 0.75)
+    ne remontaient pas car battus par du bruit non-filtré (MF1/Randosub à 0.47).
+    """
     vector = model.encode(question).tolist()
-    results = index.query(vector=vector, top_k=N_RESULTS, include_metadata=True)
+    niveau = detect_niveau(question)
+    query_kwargs = {"vector": vector, "top_k": N_RESULTS, "include_metadata": True}
+    if niveau:
+        query_kwargs["filter"] = {"niveau": {"$in": [niveau, "Général"]}}
+    results = index.query(**query_kwargs)
     return [m["metadata"]["text"] for m in results["matches"]]
 
 
@@ -138,14 +187,13 @@ Réponds UNIQUEMENT par un JSON : {{"score": 0.0}} à {{"score": 1.0}} et {{"jus
 
     r = claude.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=150,
+        max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
     try:
-        data = json.loads(r.content[0].text)
-        return float(data["score"]), data.get("justification", "")
-    except Exception:
-        return 0.5, "parse error"
+        return parse_score(r.content[0].text)
+    except Exception as e:
+        return 0.5, f"ERR({e}): {r.content[0].text[:120]}"
 
 
 def score_faithfulness(question: str, answer: str, contexts: list[str], claude) -> float:
@@ -169,14 +217,13 @@ Réponds UNIQUEMENT par un JSON : {{"score": 0.0}} à {{"score": 1.0}} et {{"jus
 
     r = claude.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=150,
+        max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
     try:
-        data = json.loads(r.content[0].text)
-        return float(data["score"]), data.get("justification", "")
-    except Exception:
-        return 0.5, "parse error"
+        return parse_score(r.content[0].text)
+    except Exception as e:
+        return 0.5, f"ERR({e}): {r.content[0].text[:120]}"
 
 
 def score_answer_relevancy(question: str, answer: str, claude) -> float:
@@ -196,14 +243,13 @@ Réponds UNIQUEMENT par un JSON : {{"score": 0.0}} à {{"score": 1.0}} et {{"jus
 
     r = claude.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=150,
+        max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
     try:
-        data = json.loads(r.content[0].text)
-        return float(data["score"]), data.get("justification", "")
-    except Exception:
-        return 0.5, "parse error"
+        return parse_score(r.content[0].text)
+    except Exception as e:
+        return 0.5, f"ERR({e}): {r.content[0].text[:120]}"
 
 
 # ─── Runner ───────────────────────────────────────────────────────────────────

@@ -6,7 +6,8 @@ Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, constr
 
 **Interface web** : `streamlit run app.py`  
 **Réindexer les docs** : `python ingest.py`  
-**Tests** : `pytest tests/`
+**Tests** : `pytest tests/`  
+**Évaluation RAG** : `python evaluate.py`
 
 ---
 
@@ -118,6 +119,36 @@ PINECONE_API_KEY = "pcsk_..."
 
 6. **Save** → l'app redémarre automatiquement (~1 min)
 7. Premier démarrage : ~3 min (téléchargement du modèle `sentence-transformers`)
+
+---
+
+## Évaluation du pipeline (RAGAS-like)
+
+`evaluate.py` mesure la qualité du pipeline RAG sur 10 questions de référence, sans dépendance externe — Claude Haiku est utilisé comme juge LLM.
+
+### Les 3 métriques
+
+| Métrique | Ce qu'elle mesure | Diagnostic si faible |
+|---|---|---|
+| **Context Recall** | Les bons chunks sont-ils remontés ? | Le retrieval rate des mauvais passages |
+| **Faithfulness** | La réponse s'appuie-t-elle sur les chunks ? | Claude hallucine (invente des infos) |
+| **Answer Relevancy** | La réponse répond-elle vraiment à la question ? | Réponses vagues ou hors-sujet |
+
+### Résultats actuels (8 chunks, filtre `$in [niveau, "Général"]`)
+
+| Métrique | Score |
+|---|---|
+| Context Recall | 0.59 |
+| Faithfulness | 0.62 |
+| Answer Relevancy | 0.78 |
+
+### Décisions de design issues de l'évaluation
+
+**N_RESULTS = 8 (et non 12)** : passer à 12 chunks améliorait le Context Recall (+0.06) mais dégradait la Faithfulness (-0.17) en injectant trop de bruit dans le contexte Claude.
+
+**Filtre `$in [niveau, "Général"]`** : quand un niveau est détecté dans la question, on inclut systématiquement les docs "Général" (règles fédérales transversales — Code du Sport, généralités brevets). Sans ça, une question N3 rate les contraintes légales générales.
+
+**evaluate.py doit reproduire exactement app.py** : bug découvert — l'ancienne version de `retrieve()` dans `evaluate.py` ne filtrait pas. Les chunks RIFAP (score vectoriel 0.75) n'apparaissaient pas car battus par du bruit non filtré (0.47). Les scores RIFAP étaient faussement à 0.00.
 
 ---
 
