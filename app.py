@@ -149,7 +149,9 @@ def ask(question: str, history: list[dict]) -> tuple:
         "include_metadata": True,
     }
     if niveau:
-        query_kwargs["filter"] = {"niveau": {"$eq": niveau}}
+        # On inclut aussi les docs "Général" (règles fédérales transversales)
+        # sans ça, une question sur N3 loupe les conditions générales applicables à tous
+        query_kwargs["filter"] = {"niveau": {"$in": [niveau, "Général"]}}
 
     results = index.query(**query_kwargs)
     matches = results["matches"]
@@ -173,21 +175,36 @@ def ask(question: str, history: list[dict]) -> tuple:
             for text in stream.text_stream:
                 yield text
 
-    # 4. Sources
+    # 4. Sources — on stocke les métadonnées complètes pour un affichage riche
     seen, sources = set(), []
     for m in matches:
         meta = m["metadata"]
         key = (meta["source"], meta.get("section", ""), meta.get("page", ""))
         if key not in seen:
             seen.add(key)
-            label = meta["source"]
-            if meta.get("section"):
-                label += f" › {meta['section']}"
-            if meta.get("page"):
-                label += f" (p.{int(meta['page'])})"
-            sources.append(label)
+            sources.append({
+                "file": meta["source"],
+                "section": meta.get("section", ""),
+                "page": int(meta["page"]) if meta.get("page") else None,
+                "niveau": meta.get("niveau", ""),
+            })
 
     return stream_response, sources, search_query
+
+
+def render_sources(sources: list[dict]):
+    """Affiche les sources avec fichier, section et page bien séparés."""
+    for s in sources:
+        # Nom du fichier sans extension
+        filename = s["file"].removesuffix(".pdf")
+        line = f"**{filename}**"
+        if s["section"]:
+            line += f"  ›  *{s['section']}*"
+        if s["page"]:
+            line += f"  ·  p. {s['page']}"
+        if s["niveau"] and s["niveau"] != "Général":
+            line += f"  `{s['niveau']}`"
+        st.markdown(line)
 
 
 # ─── UI ───────────────────────────────────────────────────────────────────────
@@ -243,9 +260,8 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg.get("sources"):
-            with st.expander("📚 Sources"):
-                for s in msg["sources"]:
-                    st.markdown(f"- {s}")
+            with st.expander(f"📚 Sources ({len(msg['sources'])})"):
+                render_sources(msg["sources"])
 
 # Input utilisateur
 _chat_input = st.chat_input("Ex : Quelles sont les conditions pour le Niveau 2 ?")
@@ -272,9 +288,8 @@ if question:
         full_response = st.write_stream(stream_fn)
 
         if sources:
-            with st.expander("📚 Sources"):
-                for s in sources:
-                    st.markdown(f"- {s}")
+            with st.expander(f"📚 Sources ({len(sources)})"):
+                render_sources(sources)
 
     st.session_state.messages.append({
         "role": "assistant",
