@@ -194,8 +194,10 @@ def ask(question: str, history: list[dict]) -> tuple:
             system=system_context,
             messages=messages,
         ) as stream:
-            for text in stream.text_stream:
-                yield text
+            try:
+                yield from stream.text_stream
+            except AttributeError:
+                pass  # bug langsmith : run_tree.outputs échoue en fin de stream — réponse déjà complète
 
     # 4. Sources — on stocke les métadonnées complètes pour un affichage riche
     seen, sources = set(), []
