@@ -7,6 +7,7 @@ Streamlit fonctionne comme ça :
 - Les widgets (st.chat_input, st.chat_message) gèrent l'UI
 """
 import os
+import traceback
 import streamlit as st
 import anthropic
 from dotenv import load_dotenv
@@ -14,6 +15,16 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 
 load_dotenv()
+
+# ─── Langsmith — observabilité LLM ───────────────────────────────────────────
+# langsmith.wrappers.wrap_anthropic intercepte chaque appel au client Anthropic
+# et envoie la trace (prompt, réponse, tokens, latence) à Langsmith.
+# Activé uniquement si LANGCHAIN_API_KEY est défini (transparent sinon).
+# Dashboard : https://smith.langchain.com → projet "ffessm-mft"
+_langsmith_enabled = bool(os.getenv("LANGCHAIN_API_KEY"))
+if _langsmith_enabled:
+    os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+    os.environ.setdefault("LANGCHAIN_PROJECT", "ffessm-mft")
 
 INDEX_NAME = "ffessm-mft"
 EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
@@ -56,7 +67,14 @@ def get_pinecone_index():
 
 
 def get_claude():
-    return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    if _langsmith_enabled:
+        try:
+            from langsmith.wrappers import wrap_anthropic
+            client = wrap_anthropic(client)
+        except ImportError:
+            pass  # langsmith non installé → on continue sans tracing
+    return client
 
 
 # ─── Query rewriting ──────────────────────────────────────────────────────────
@@ -229,7 +247,34 @@ with st.sidebar:
     st.divider()
     if st.button("🔄 Nouvelle conversation", use_container_width=True):
         st.session_state.messages = []
+        st.session_state.traces = []
         st.rerun()
+    st.divider()
+
+    # ─── Trace de debug ───────────────────────────────────────────────────────
+    # Chaque interaction est loggée dans st.session_state.traces.
+    # Le debug panel permet aux beta-testeurs de copier la trace en cas de bug.
+    if st.session_state.get("traces"):
+        with st.expander("🔬 Debug — dernière trace"):
+            last = st.session_state.traces[-1]
+            st.markdown(f"**Question :** {last['question']}")
+            if last['rewritten'] != last['question']:
+                st.markdown(f"**Reformulée :** {last['rewritten']}")
+            if last['niveau']:
+                st.markdown(f"**Niveau détecté :** `{last['niveau']}`")
+            st.markdown(f"**Sources ({len(last['sources'])}) :**")
+            for s in last['sources']:
+                st.caption(f"- {s['file'].removesuffix('.pdf')} p.{s.get('page','?')}")
+            if last.get("error"):
+                st.error(last["error"])
+            st.code(
+                f"question: {last['question']}\n"
+                f"rewritten: {last['rewritten']}\n"
+                f"niveau: {last['niveau']}\n"
+                f"sources: {[s['file'] for s in last['sources']]}\n"
+                f"error: {last.get('error', 'none')}",
+                language="yaml"
+            )
     st.divider()
     st.caption("Basé sur les Manuels de Formation Technique (MFT) FFESSM.")
 
@@ -238,6 +283,8 @@ st.caption("Posez vos questions sur les formations et brevets de plongée FFESSM
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "traces" not in st.session_state:
+    st.session_state.traces = []
 
 # Suggestions si aucun message
 if not st.session_state.messages:
@@ -273,26 +320,37 @@ if question:
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        # On passe l'historique sans le dernier message (la question courante)
         history = st.session_state.messages[:-1]
+        trace = {"question": question, "rewritten": question, "niveau": None, "sources": [], "error": None}
 
-        stream_fn, sources, rewritten = ask(question, history)
+        try:
+            stream_fn, sources, rewritten = ask(question, history)
+            niveau = detect_niveau(question) or detect_niveau(rewritten)
+            trace.update({"rewritten": rewritten, "niveau": niveau, "sources": sources})
 
-        # Affiche la query reformulée si elle diffère de l'originale
-        niveau = detect_niveau(question) or detect_niveau(rewritten)
-        if niveau:
-            st.caption(f"🔍 Recherche filtrée sur : **{niveau}**")
-        if rewritten.strip().lower() != question.strip().lower():
-            st.caption(f"🔄 Question reformulée : *{rewritten}*")
+            if niveau:
+                st.caption(f"🔍 Recherche filtrée sur : **{niveau}**")
+            if rewritten.strip().lower() != question.strip().lower():
+                st.caption(f"🔄 Question reformulée : *{rewritten}*")
 
-        full_response = st.write_stream(stream_fn)
+            full_response = st.write_stream(stream_fn)
 
-        if sources:
-            with st.expander(f"📚 Sources ({len(sources)})"):
-                render_sources(sources)
+            if sources:
+                with st.expander(f"📚 Sources ({len(sources)})"):
+                    render_sources(sources)
+
+        except Exception as e:
+            error_msg = traceback.format_exc()
+            trace["error"] = error_msg
+            full_response = "Une erreur s'est produite. Ouvre le panel **Debug** dans la barre latérale et envoie la trace à l'équipe."
+            st.error(full_response)
+            print(f"[ERROR] {error_msg}")  # visible dans les logs Streamlit Cloud
+
+        finally:
+            st.session_state.traces.append(trace)
 
     st.session_state.messages.append({
         "role": "assistant",
         "content": full_response,
-        "sources": sources,
+        "sources": trace["sources"],
     })

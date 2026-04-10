@@ -4,3 +4,4 @@ pinecone
 sentence-transformers
 python-dotenv
 streamlit
+langsmith
