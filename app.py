@@ -189,20 +189,23 @@ def ask(question: str, history: list[dict]) -> tuple:
     contexts = [m["metadata"]["text"] for m in matches]
 
     # 3. Génération avec Claude en streaming + historique
-    # traced=False : wrap_anthropic est incompatible avec messages.stream() / text_stream
-    # (run_tree.outputs = ... lève AttributeError en fin de stream)
-    # rewrite_query() utilise get_claude(traced=True) + messages.create() → tracé dans Langsmith
-    claude = get_claude(traced=False)
+    # On utilise messages.create(stream=True) plutôt que messages.stream() :
+    # wrap_anthropic gère correctement create() (via reduce_fn dans traceable),
+    # mais est incompatible avec le context manager stream() / text_stream.
+    claude = get_claude(traced=True)
     system_context, messages = build_messages(question, contexts, history)
 
     def stream_response():
-        with claude.messages.stream(
+        with claude.messages.create(
             model="claude-opus-4-6",
             max_tokens=1024,
             system=system_context,
             messages=messages,
+            stream=True,
         ) as stream:
-            yield from stream.text_stream
+            for event in stream:
+                if event.type == "content_block_delta" and hasattr(event.delta, "text"):
+                    yield event.delta.text
 
     # 4. Sources — on stocke les métadonnées complètes pour un affichage riche
     seen, sources = set(), []
