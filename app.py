@@ -70,14 +70,19 @@ def get_pinecone_index():
     return pc.Index(INDEX_NAME)
 
 
-def get_claude():
+def get_claude(traced: bool = True):
+    """
+    traced=True  → client wrappé langsmith (pour les appels .create() non-streamés)
+    traced=False → client brut (pour .stream() — wrap_anthropic est incompatible avec
+                   text_stream : run_tree.outputs = ... lève AttributeError en fin de stream)
+    """
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    if _langsmith_enabled:
+    if traced and _langsmith_enabled:
         try:
             from langsmith.wrappers import wrap_anthropic
             client = wrap_anthropic(client)
         except ImportError:
-            pass  # langsmith non installé → on continue sans tracing
+            pass
     return client
 
 
@@ -184,7 +189,10 @@ def ask(question: str, history: list[dict]) -> tuple:
     contexts = [m["metadata"]["text"] for m in matches]
 
     # 3. Génération avec Claude en streaming + historique
-    claude = get_claude()
+    # traced=False : wrap_anthropic est incompatible avec messages.stream() / text_stream
+    # (run_tree.outputs = ... lève AttributeError en fin de stream)
+    # rewrite_query() utilise get_claude(traced=True) + messages.create() → tracé dans Langsmith
+    claude = get_claude(traced=False)
     system_context, messages = build_messages(question, contexts, history)
 
     def stream_response():
@@ -194,10 +202,7 @@ def ask(question: str, history: list[dict]) -> tuple:
             system=system_context,
             messages=messages,
         ) as stream:
-            try:
-                yield from stream.text_stream
-            except AttributeError:
-                pass  # bug langsmith : run_tree.outputs échoue en fin de stream — réponse déjà complète
+            yield from stream.text_stream
 
     # 4. Sources — on stocke les métadonnées complètes pour un affichage riche
     seen, sources = set(), []
