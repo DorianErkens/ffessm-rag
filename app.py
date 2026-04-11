@@ -7,6 +7,8 @@ Streamlit fonctionne comme ça :
 - Les widgets (st.chat_input, st.chat_message) gèrent l'UI
 """
 import os
+import json
+import threading
 import traceback
 import streamlit as st
 import anthropic
@@ -184,7 +186,7 @@ def ask(question: str, history: list[dict]) -> tuple:
     matches = results["matches"]
 
     if not matches:
-        return (lambda: iter(["Aucun extrait pertinent trouvé dans les MFTs."])), [], search_query
+        return (lambda: iter(["Aucun extrait pertinent trouvé dans les MFTs."])), [], search_query, []
 
     contexts = [m["metadata"]["text"] for m in matches]
 
@@ -221,7 +223,7 @@ def ask(question: str, history: list[dict]) -> tuple:
                 "niveau": meta.get("niveau", ""),
             })
 
-    return stream_response, sources, search_query
+    return stream_response, sources, search_query, contexts
 
 
 def render_sources(sources: list[dict]):
@@ -237,6 +239,89 @@ def render_sources(sources: list[dict]):
         if s["niveau"] and s["niveau"] != "Général":
             line += f"  `{s['niveau']}`"
         st.markdown(line)
+
+
+# ─── Feedback & évaluation background ────────────────────────────────────────
+
+def _diagnose(question: str, answer: str, contexts: list[str], claude) -> dict:
+    """Hypothèse de diagnostic Claude Haiku pour un vote 👎."""
+    context_block = "\n\n---\n\n".join(contexts[:3])
+    prompt = f"""Un utilisateur a jugé cette réponse mauvaise.
+
+Question : {question}
+Réponse générée : {answer}
+Extraits utilisés (top 3) :
+{context_block}
+
+Identifie la cause probable du problème parmi :
+- retrieval : les extraits ne contiennent pas la bonne information
+- chunking : les extraits sont fragmentés ou incomplets
+- hallucination : la réponse contient des infos absentes des extraits
+- relevance : la réponse ne répond pas directement à la question
+
+Réponds UNIQUEMENT par un JSON :
+{{"type": "retrieval|chunking|hallucination|relevance", "hypothesis": "explication en 1-2 phrases", "confidence": 0.0}}"""
+
+    r = claude.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    try:
+        text = r.content[0].text
+        start, end = text.find("{"), text.rfind("}") + 1
+        return json.loads(text[start:end]) if start != -1 else {"type": "unknown", "hypothesis": text[:200], "confidence": 0.5}
+    except Exception:
+        return {"type": "unknown", "hypothesis": r.content[0].text[:200], "confidence": 0.5}
+
+
+def run_background_eval(question: str, answer: str, contexts: list[str], vote: str):
+    """
+    Lance faithfulness + relevancy en arrière-plan (threading.Thread daemon).
+    Pour les 👎 : ajoute un diagnostic "pourquoi c'est mauvais ?".
+    Résultats loggés dans Langsmith — jamais propagés à l'UI (fire-and-forget).
+    """
+    def _eval():
+        try:
+            from evaluate import score_faithfulness, score_answer_relevancy
+            claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+            faith_score, faith_why = score_faithfulness(question, answer, contexts, claude)
+            rel_score, rel_why = score_answer_relevancy(question, answer, claude)
+
+            results = {
+                "vote": vote,
+                "faithfulness": faith_score,
+                "faithfulness_why": faith_why,
+                "answer_relevancy": rel_score,
+                "answer_relevancy_why": rel_why,
+            }
+
+            if vote == "down":
+                results["diagnostic"] = _diagnose(question, answer, contexts, claude)
+
+            # Log vers Langsmith — échec silencieux pour ne pas casser l'app
+            if _langsmith_enabled:
+                try:
+                    from langsmith import Client as LS
+                    from datetime import datetime, timezone
+                    ls = LS(api_url="https://eu.api.smith.langchain.com", api_key=_langsmith_api_key)
+                    now = datetime.now(tz=timezone.utc)
+                    run = ls.create_run(
+                        name="user-feedback-eval",
+                        run_type="chain",
+                        inputs={"question": question, "vote": vote, "answer": answer[:500]},
+                        project_name="ffessm-mft",
+                        start_time=now,
+                    )
+                    ls.update_run(run.id, outputs=results, end_time=datetime.now(tz=timezone.utc))
+                except Exception as e:
+                    print(f"[LANGSMITH EVAL ERROR] {e}")
+
+        except Exception:
+            print(f"[BACKGROUND EVAL ERROR] {traceback.format_exc()}")
+
+    threading.Thread(target=_eval, daemon=True).start()
 
 
 # ─── UI ───────────────────────────────────────────────────────────────────────
@@ -290,6 +375,18 @@ with st.sidebar:
                 language="yaml"
             )
     st.divider()
+
+    # ─── Compteur de feedback session ─────────────────────────────────────────
+    voted = [m for m in st.session_state.get("messages", []) if m.get("vote")]
+    if voted:
+        st.markdown("**📊 Feedback session**")
+        _up = sum(1 for m in voted if m["vote"] == "up")
+        _down = sum(1 for m in voted if m["vote"] == "down")
+        _col1, _col2 = st.columns(2)
+        _col1.metric("👍", _up)
+        _col2.metric("👎", _down)
+        st.divider()
+
     st.caption("Basé sur les Manuels de Formation Technique (MFT) FFESSM.")
 
 st.title("🤿 Assistant MFT FFESSM")
@@ -317,12 +414,32 @@ else:
     question_from_suggestion = None
 
 # Affiche l'historique
-for msg in st.session_state.messages:
+for _i, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg.get("sources"):
             with st.expander(f"📚 Sources ({len(msg['sources'])})"):
                 render_sources(msg["sources"])
+
+        # Boutons de feedback — uniquement sur les messages assistant
+        if msg["role"] == "assistant":
+            if msg.get("vote"):
+                icon = "👍" if msg["vote"] == "up" else "👎"
+                st.caption(f"Évalué {icon}")
+            else:
+                _c1, _c2, _ = st.columns([1, 1, 8])
+                if _c1.button("👍", key=f"vote_up_{_i}"):
+                    st.session_state.messages[_i]["vote"] = "up"
+                    _q = next((st.session_state.messages[j]["content"] for j in range(_i - 1, -1, -1)
+                                if st.session_state.messages[j]["role"] == "user"), "")
+                    run_background_eval(_q, msg["content"], msg.get("contexts", []), "up")
+                    st.rerun()
+                if _c2.button("👎", key=f"vote_down_{_i}"):
+                    st.session_state.messages[_i]["vote"] = "down"
+                    _q = next((st.session_state.messages[j]["content"] for j in range(_i - 1, -1, -1)
+                                if st.session_state.messages[j]["role"] == "user"), "")
+                    run_background_eval(_q, msg["content"], msg.get("contexts", []), "down")
+                    st.rerun()
 
 # Input utilisateur
 _chat_input = st.chat_input("Ex : Quelles sont les conditions pour le Niveau 2 ?")
@@ -336,9 +453,10 @@ if question:
     with st.chat_message("assistant"):
         history = st.session_state.messages[:-1]
         trace = {"question": question, "rewritten": question, "niveau": None, "sources": [], "error": None}
+        contexts = []
 
         try:
-            stream_fn, sources, rewritten = ask(question, history)
+            stream_fn, sources, rewritten, contexts = ask(question, history)
             niveau = detect_niveau(question) or detect_niveau(rewritten)
             trace.update({"rewritten": rewritten, "niveau": niveau, "sources": sources})
 
@@ -367,4 +485,5 @@ if question:
         "role": "assistant",
         "content": full_response,
         "sources": trace["sources"],
+        "contexts": contexts,
     })
