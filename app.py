@@ -150,9 +150,9 @@ EXTRAITS MFT PERTINENTS :
 
     messages = []
 
-    # Historique des tours précédents
+    # Historique des tours précédents (tronqué à 400 chars pour limiter les tokens)
     for msg in history[-(HISTORY_WINDOW * 2):]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": msg["role"], "content": msg["content"][:400]})
 
     # Question actuelle
     messages.append({"role": "user", "content": question})
@@ -197,8 +197,8 @@ def ask(question: str, history: list[dict]) -> tuple:
 
     def stream_response():
         with claude.messages.create(
-            model="claude-opus-4-6",
-            max_tokens=1024,
+            model="claude-sonnet-4-6",  # Opus inutile ici : RAG = lire+synthétiser, pas raisonner. 5x moins cher, 2x plus rapide.
+            max_tokens=600,  # réponses MFT ≤ 500 tokens en pratique
             system=system_context,
             messages=messages,
             stream=True,
