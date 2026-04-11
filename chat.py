@@ -10,7 +10,7 @@ from pinecone import Pinecone
 load_dotenv()
 
 INDEX_NAME = "ffessm-mft"
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_MODEL = "paraphrase-multilingual-mpnet-base-v2"
 N_RESULTS = 8
 
 # Mots-clés dans la question → tag de niveau pour le metadata filtering
@@ -76,8 +76,8 @@ def ask(question: str) -> tuple[str, list[str]]:
         "include_metadata": True,
     }
     if niveau:
-        # Pinecone metadata filter : ne cherche que dans les chunks de ce niveau
-        query_kwargs["filter"] = {"niveau": {"$eq": niveau}}
+        # $in inclut aussi "Général" (règles fédérales transversales applicables à tous)
+        query_kwargs["filter"] = {"niveau": {"$in": [niveau, "Général"]}}
 
     results = index.query(**query_kwargs)
 
@@ -101,8 +101,8 @@ def ask(question: str) -> tuple[str, list[str]]:
     # 4. Génération avec Claude
     claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     message = claude.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=1024,
+        model="claude-sonnet-4-6",
+        max_tokens=600,
         messages=[{"role": "user", "content": build_prompt(question, contexts)}],
     )
 
