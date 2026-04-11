@@ -5,3 +5,6 @@ sentence-transformers
 python-dotenv
 streamlit
 langsmith
+
+# Évaluation RAGAS (local uniquement — scikit-network ne compile pas sur Python 3.14)
+# pip install ragas --no-deps && pip install datasets tiktoken nest-asyncio appdirs diskcache openai instructor langchain-community langchain-openai langchain-anthropic
