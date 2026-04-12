@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "educatif": "./agents/graph.py:educatif_graph"
+  },
+  "env": ".env"
+}

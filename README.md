@@ -2,16 +2,22 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ffessm-rag-proto.streamlit.app)
 
-Chatbot de Q&A sur les Manuels de Formation Technique (MFT) de la FFESSM, construit avec un pipeline RAG (Retrieval-Augmented Generation).
+Deux modules complémentaires autour des Manuels de Formation Technique (MFT) de la FFESSM :
+
+- **Assistant MFT** — chatbot RAG pour répondre aux questions réglementaires et factuelles
+- **Générateur d'Éducatifs** — pipeline multi-agents LangGraph pour aider les moniteurs à préparer leurs séances
 
 **Interface web** : `streamlit run app.py`  
 **Réindexer les docs** : `python ingest.py`  
 **Tests** : `pytest tests/`  
-**Évaluation RAG** : `python evaluate.py`
+**Évaluation RAG** : `python evaluate.py`  
+**LangGraph Studio** : `langgraph dev` → https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 
 ---
 
 ## Architecture
+
+### Module 1 — Assistant RAG
 
 ```
 docs/*.pdf
@@ -31,7 +37,7 @@ docs/*.pdf
     │   À chaque question :
     │
     ▼
-[ app.py / chat.py ] ──────────────────────────────────────────────────────
+[ app.py ] ─────────────────────────────────────────────────────────────────
     │  1. Détection du niveau dans la question (N1, N2, MF1…)
     │  2. Embedding de la question
     │  3. Recherche des 8 chunks les plus proches (similarité cosinus)
@@ -42,6 +48,41 @@ docs/*.pdf
 [ Réponse + sources (fichier › section › page) ]
 ```
 
+### Module 2 — Générateur d'Éducatifs (LangGraph)
+
+Pipeline multi-agents déclenché quand un moniteur pose une question pédagogique.
+
+```
+[ Question moniteur ]
+        │
+        ▼
+[ Node 1 — Intent Classifier ]   Claude Haiku
+  Détecte si la question est pédagogique ("enseigner")
+  ou factuelle ("info") → bifurcation du graphe
+        │
+        │ si "enseigner"
+        ▼
+[ Node 2 — Competency Extractor ]   Claude Haiku
+  Extrait : compétence, niveau cible, stade de l'élève,
+  type de séance (initiation / remédiation / perfectionnement)
+        │
+        ▼
+[ Node 3 — RAG Retriever ]   Pinecone
+  Construit une requête pédagogique optimisée
+  et récupère les extraits MFT pertinents
+        │
+        ▼
+[ Node 4 — Educatif Generator ]   Claude Sonnet + tool_use
+  Génère la fiche éducatif structurée via function calling
+  (JSON garanti valide par l'API Anthropic)
+        │
+        ▼
+[ Fiche : contexte · objectif · position formation · justification
+          prérequis · éducatifs progressifs · évaluation · pour aller plus loin ]
+```
+
+![Graphe LangGraph](docs/agent_graph.png)
+
 ---
 
 ## Stack
@@ -49,10 +90,13 @@ docs/*.pdf
 | Composant | Outil | Pourquoi |
 |-----------|-------|----------|
 | Extraction PDF | PyMuPDF (`fitz`) | Accès aux métadonnées typographiques (taille police) |
-| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` | Multilingue, français natif, gratuit |
+| Embeddings | `paraphrase-multilingual-mpnet-base-v2` | Multilingue, français natif, gratuit |
 | Base vectorielle | Pinecone (cloud) | Persiste entre déploiements, accessible depuis Streamlit Cloud |
-| LLM | Claude Opus 4.6 (Anthropic API) | Génération + streaming |
-| Interface web | Streamlit | Déploiement zero-infra |
+| LLM génération | Claude Sonnet 4.6 (Anthropic API) | Génération + streaming + tool_use |
+| LLM classification | Claude Haiku 4.5 | Tâches légères : intent, extraction d'entités |
+| Orchestration agents | LangGraph | Graphe d'états typé, stream() natif, LangGraph Studio |
+| Interface web | Streamlit multi-pages | Déploiement zero-infra |
+| Observabilité | Langsmith | Traces LLM, évaluation feedback |
 
 ---
 
@@ -64,26 +108,23 @@ cd ffessm-rag
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pip install -U "langgraph-cli[inmem]"   # pour LangGraph Studio
 ```
 
 Créer un fichier `.env` :
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 PINECONE_API_KEY=pcsk_...
+LANGSMITH_API_KEY=ls__...   # optionnel — observabilité Langsmith
 ```
 
 ---
 
 ## Usage
 
-### Interface web
+### Interface web complète (RAG + Éducatifs)
 ```bash
 streamlit run app.py
-```
-
-### Ligne de commande
-```bash
-python chat.py
 ```
 
 ### Réindexer les documents
@@ -93,7 +134,17 @@ python ingest.py
 ```
 
 > L'ingestion vide l'index Pinecone et repart de zéro à chaque exécution.
-> Ne lancer qu'en cas de mise à jour des documents.
+
+### Tester le pipeline éducatifs en ligne de commande
+```bash
+python agents/graph.py
+```
+
+### LangGraph Studio (visualisation interactive du graphe)
+```bash
+langgraph dev
+```
+Puis ouvrir : https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 
 ### Lancer les tests
 ```bash
@@ -195,6 +246,34 @@ Ces bugs sont couverts par les tests dans `tests/test_ingest.py`.
 
 ---
 
+## Structure du projet
+
+```
+ffessm-rag/
+├── app.py                    # Assistant RAG — interface Streamlit principale
+├── ingest.py                 # Pipeline d'ingestion PDF → Pinecone
+├── evaluate.py               # Évaluation RAG (context recall, faithfulness, relevancy)
+├── agents/
+│   ├── state.py              # TypedDict du state LangGraph
+│   ├── intent_classifier.py  # Node 1 — classification intention (Haiku)
+│   ├── competency_extractor.py # Node 2 — extraction compétence/niveau (Haiku)
+│   ├── rag_retriever.py      # Node 3 — retrieval Pinecone pédagogique
+│   ├── educatif_generator.py # Node 4 — génération fiche via tool_use (Sonnet)
+│   └── graph.py              # Assembly LangGraph + point d'entrée public
+├── pages/
+│   └── 1_Éducatifs.py       # Page Streamlit module éducatifs
+├── data/
+│   └── competences_mft.json  # Référentiel compétences MFT (à enrichir)
+├── docs/
+│   ├── *.pdf                 # MFTs FFESSM source
+│   └── agent_graph.png       # Visualisation du graphe LangGraph
+├── tests/
+│   └── test_ingest.py        # Tests unitaires pipeline d'ingestion
+└── langgraph.json            # Config LangGraph Studio
+```
+
+---
+
 ## Concepts clés
 
 **RAG (Retrieval-Augmented Generation)** : au lieu de fine-tuner un modèle sur les MFTs (coûteux), on pré-indexe les documents sous forme de vecteurs. À chaque question, on récupère les passages les plus pertinents et on les injecte dans le prompt — le LLM répond en s'appuyant sur ces extraits.
@@ -204,3 +283,7 @@ Ces bugs sont couverts par les tests dans `tests/test_ingest.py`.
 **Chunking sémantique** : on ne découpe pas les PDFs à l'aveugle par nombre de mots. PyMuPDF donne accès à la taille de police de chaque bloc — on s'en sert pour détecter les titres de section et couper aux frontières des idées.
 
 **Metadata filtering** : chaque chunk stocké dans Pinecone porte un tag `niveau` (N1, N2, MF1…). Quand une question mentionne un niveau, on filtre en amont de la recherche vectorielle — résultats bien plus précis.
+
+**LangGraph** : framework d'orchestration d'agents basé sur un graphe d'états typés. Chaque nœud est une fonction pure `(state) → dict` qui retourne uniquement les clés qu'il modifie. Le graphe gère la fusion des states, les arêtes conditionnelles et l'observabilité native via `stream()`.
+
+**Tool Use (Structured Output)** : au lieu de demander à Claude de "retourner un JSON" (fragile), on définit un schéma de fonction et on force Claude à l'appeler via `tool_choice`. L'API Anthropic garantit que le résultat est un dict Python valide respectant le schéma — zéro parsing, zéro guillemets non échappés.
