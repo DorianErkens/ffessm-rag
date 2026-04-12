@@ -1,0 +1,129 @@
+{
+  "_meta": {
+    "version": "0.1.0",
+    "description": "Référentiel structuré des compétences MFT FFESSM. À remplir itérativement depuis les PDFs.",
+    "source": "Manuel de Formation Technique FFESSM",
+    "statut": "skeleton — données à compléter"
+  },
+
+  "domaines": [
+    "technique",
+    "physiologie",
+    "environnement",
+    "securite",
+    "reglementation",
+    "pedagogie"
+  ],
+
+  "niveaux_plongeur": ["N1", "N2", "N3", "N4"],
+  "niveaux_moniteur": ["Initiateur", "MF1", "MF2"],
+
+  "maitrise": {
+    "description": "Niveaux de maîtrise attendus dans le MFT",
+    "valeurs": ["découverte", "application", "maîtrise", "expertise"],
+    "definitions": {
+      "découverte": "L'élève découvre la technique, encadrement rapproché nécessaire",
+      "application": "L'élève applique la technique dans des conditions favorables",
+      "maîtrise": "L'élève exécute la technique de façon autonome et fiable",
+      "expertise": "L'élève adapte et optimise la technique quelle que soit la situation"
+    }
+  },
+
+  "competences": [
+    {
+      "id": "comp_palmation",
+      "nom": "Palmation",
+      "domaine": "technique",
+      "description": "Capacité à se propulser efficacement sous l'eau",
+      "niveaux": {
+        "N1": {
+          "intitule": "Palmation ventrale alternée",
+          "maitrise_attendue": "application",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        },
+        "N2": {
+          "intitule": "Palmation efficace sur toute la colonne d'eau",
+          "maitrise_attendue": "maîtrise",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        },
+        "N3": {
+          "intitule": "Palmation adaptée à l'environnement et aux conditions",
+          "maitrise_attendue": "expertise",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        }
+      }
+    },
+    {
+      "id": "comp_equilibrage",
+      "nom": "Équilibrage",
+      "domaine": "technique",
+      "description": "Maîtrise de la flottabilité et de la position dans l'eau",
+      "niveaux": {
+        "N1": {
+          "intitule": "Équilibrage en surface et faible profondeur",
+          "maitrise_attendue": "application",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        },
+        "N2": {
+          "intitule": "Équilibrage précis en pleine eau",
+          "maitrise_attendue": "maîtrise",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        }
+      }
+    },
+    {
+      "id": "comp_gestion_air",
+      "nom": "Gestion de l'air / Essoufflement",
+      "domaine": "physiologie",
+      "description": "Prévention et gestion de l'essoufflement, lecture manomètre, autonomie",
+      "niveaux": {
+        "N1": {
+          "intitule": "Respiration calme et régulière, lecture manomètre",
+          "maitrise_attendue": "application",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        },
+        "N2": {
+          "intitule": "Gestion autonome de l'air, prévention essoufflement",
+          "maitrise_attendue": "maîtrise",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        }
+      }
+    },
+    {
+      "id": "comp_remontee_securisee",
+      "nom": "Remontée sécurisée / RSE",
+      "domaine": "securite",
+      "description": "Techniques de remontée maîtrisée, RSE, OSCAR",
+      "niveaux": {
+        "N1": {
+          "intitule": "Remontée accompagnée maîtrisée",
+          "maitrise_attendue": "application",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        },
+        "N2": {
+          "intitule": "RSE autonome avec palier de sécurité",
+          "maitrise_attendue": "maîtrise",
+          "contenu": "",
+          "criteres_realisation": [],
+          "erreurs_frequentes": []
+        }
+      }
+    }
+  ]
+}
