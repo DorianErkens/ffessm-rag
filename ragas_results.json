@@ -1,0 +1,217 @@
+{
+  "samples": [
+    {
+      "question": "Quel est l'âge minimum pour passer le Niveau 1 ?",
+      "reference": "L'âge minimum pour le Niveau 1 (PE20) est de 14 ans.",
+      "contexts": [
+        "[CONDITIONS D’ACCES A LA FORMATION]\n Présenter le brevet Niveau 1 ou une attestation de Niveau 1 ou un certificat de compétences de Niveau 1 (conformément au Code du Sport) (copie de la carte double face FFESSM).  Présenter un carnet de plongée ou une fiche justificative attestant de 4 plongées, pouvant être effectuées pendant la formation, en milieu naturel validées par un moniteur.  Etre âgé de 14 ans au moins à la date de la demande : justificatif de l’âge (autorisation d’un responsable légal pour les mineurs).",
+        "[ACCÈS ET RÈGLES D’ORGANISATION]\nPour accéder au stage final et à l’examen, le stagiaire doit remplir les conditions exigées lors de l’accès au stage initial, et de plus : — Etre âgé de 20 ans au 1 er janvier de l’année de l’examen — Etre titulaire, depuis au moins 12 mois à la date d’ouverture de l’examen, des diplômes exigés pour entrer en stage initial — Etre titulaire du permis de conduire des bateaux de plaisance à moteur, permis option côtière — Avoir validé le stage initial depuis plus de 30 jours pleins à la veille de la date de début du stage final — Fournir un bulletin de demande d’inscription sur la liste des candidats au FFM signé par le président de son club d’appartenance et contresigné par le président de la CTR — Présenter son livret pédagogique dûment rempli Pour s’inscrire au stage final et à l’examen, le candidat doit : — Se procurer le bulletin d’inscription sur l’espace CTN du site de la FFESSM ( https://plongee. ffessm.fr) — Faire parvenir à la Commission Technique Régionale d’appartenance, avant la date de clôture des inscriptions spécifiée par la circulaire fédérale relative aux stages et examens de l’année en cours, un dossier comprenant : • Le formulaire de demande d’inscription dûment renseigné • La photocopie du diplôme du MF1 de la FFESSM, ou du BEES1, ou du DEJEPS (E3) • La photocopie de la carte RIFA Plongée de la FFESSM • La photocopie de l’assurance si celle-ci n’est pas celle proposée par la FFESSM Lors de son inscription à une session de stage final et/ou examen MF2, le candidat devra indiquer l’un des choix suivants : — Candidature à l’ensemble des épreuves (groupe 1, 2 et 3) pour l’obtention du MF2 — Candidature aux épreuves des groupes 1 et 3 pour l’obtention du FFM. Dans ce cadre, les conditions décrites ci-après ne concernent que les groupes 1 et 3."
+      ],
+      "answer": "Selon les extraits du MFT fournis, **l'âge minimum pour accéder à la formation Niveau 1 n'est pas spécifié dans les documents disponibles**.\n\nLes extraits mentionnent des conditions d'accès pour d'autres niveaux (Niveau 2, MF2, etc.) mais pas pour le Niveau 1 spécifiquement.\n\nPour cette information, je te recommande de consulter le MFT complet ou de contacter directement la FFESSM.",
+      "maison": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.5,
+        "context_recall": 0.5
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quelles sont les conditions pour obtenir le Niveau 2 (PA20/PE40) ?",
+      "reference": "Être titulaire du Niveau 1 ou équivalent, avoir au moins 16 ans, présenter un certificat médical de non contre-indication à la plongée et être licencié FFESSM.",
+      "contexts": [
+        "[CONDITIONS D’ACCÈS À LA FORMATION]\nConditions communes aux PA20, PE40 et niveau 2 : •\t Être titulaire de la licence FFESSM en cours de validité •\t Être titulaire du brevet de plongeur niveau 1 (N1) de la FFESSM ou d’une certification dont les aptitudes sont jugées équivalentes pour débuter la formation et avoir réalisé au moins quatre plongées (attestées) en milieu naturel. •\t Présenter un certificat d’absence de contre-indication à la plongée conforme à la réglementation fédérale en vigueur, se référer au chapitre « généralités » du manuel de formation Conditions spécifiques aux :",
+        "[FORMATION ET ÉVALUATION]\nLe niveau « PESH-40 » atteste de compétences ou “savoir-faire” caractéristiques de ce niveau sont les conditions minimales d’accès aux prérogatives définies par le Code du Sport. Après obtention du niveau « PESH 40 m », le plongeur Handisub® peut évoluer et pratiquer graduellement, jusqu'à la profondeur de 40 mètres. Proposition d ’ une fiche d ’ autoévaluation et de validation (insérable dans le passeport)"
+      ],
+      "answer": "# Conditions pour obtenir le Niveau 2 (PA20/PE40)\n\nSelon les extraits du MFT fournis, voici les conditions communes pour accéder à la formation :\n\n## Conditions communes à PA20, PE40 et Niveau 2 :\n\n- **Être titulaire de la licence FFESSM en cours de validité**\n\n- **Être titulaire du brevet de plongeur niveau 1 (N1)** de la FFESSM ou d'une certification dont les aptitudes sont jugées équivalentes\n  - Avoir réalisé **au moins quatre plongées attestées en milieu naturel**\n\n- **Présenter un certificat d'absence de contre-indication à la plongée** conforme à la réglementation fédérale en vigueur\n\n## Conditions spécifiques au Niveau 2 :\n\n- **Être âgé de 15 ans au minimum** à la date d'entrée en formation et de délivrance du brevet\n  - ⚠️ Les prérogatives d'évolution en autonomie ne s'exercent qu'à partir de **16 ans**\n\n---\n\n*Note : Les extraits mentionnent qu'il existe des \"conditions spécifiques\" aux formations, mais le détail complet n'est pas fourni dans les passages disponibles.*",
+      "maison": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.85,
+        "context_recall": 0.5
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Jusqu'à quelle profondeur un plongeur Niveau 2 peut-il évoluer en autonomie ?",
+      "reference": "Un plongeur Niveau 2 (PA20) peut évoluer en autonomie jusqu'à 20 m, et jusqu'à 40 m encadré par un Guide de Palanquée.",
+      "contexts": [
+        "[ÉVOLUER EN AUTONOMIE]\nCompétence attendue ― Le plongeur sait évoluer en immersion en toute autonomie dans le souci de la sécurité de la palanquée et dans le respect des choix de planification. 1 ― Technique Sécurité de la palanquée Connaissance du fonctionnement de son ins- trument de désaturation, lecture des principaux paramètres : durée et profondeurs, vitesse de re- montée, durée de plongée sans palier, durée et profondeur des paliers, etc. Participation à la cohésion de la palanquée : res- pect de la vitesse de remontée, tenue du palier, cohabitation de différents moyens de désatura- tion. Mise en œuvre de la sécurité pour la sortie de l’eau, lancement du parachute. 2 ― Comportement Les plongeurs autonomes étant coresponsables, une attention constante doit être portée à la communication avec les autres membres de la palanquée, à leur surveillance régulière, au contrôle des différents paramètres de plongée prédéfinis sur le plan de l’autonomie en air et de la désaturation. Une vigilance accrue est attendue dans la gestion de la désaturation. 3 ― Théorie Information sur la modèlisation de la désaturation. Le plongeur sait utiliser son ordinateur de plongée : il identifie les différents affichages et paramètres (durée, profondeur instantanée et maximale, durée maximale de plongée sans palier, paliers facultatifs et obligatoires, durée de la remontée, indicateur de vitesse, alarmes...), il connait les critères de conservatisme, il sait utiliser le mode planification et carnet de plongée. Il connait les valeurs limites de GF (gradient factor) pour la plongée à l’air (GF bas = GF haut = entre 85 et 90%). Le plongeur est capable de gérer la désaturation au sein d’une palanquée utilisant des moyens différents. Connaissance de la table fédérale et de ses principes de fonctionnement. Connaissance des obligations règlementaires et des incidences sur les responsabilités civiles et pénales partagées des plongeurs. Modalités d’évaluation : Les comportements doivent être évalués tout au long de la formation et au travers de mises en situations variées (milieu, condition de visibilité, courant, ...). Le plongeur est capable de respecter la vitesse de remontée , les paliers et de mettre en place un parachute . Il participe activement à la gestion de la désaturation, intègre les consignes du DP et tient compte des différents matériels. Pour la partie théorique, ces connaissances sont à vérifier de manière orale, ciblées sur des situations concrètes, pratiques et réalistes. Résolution d’au moins un problème de table (pas d’utilisation planifiée, pas de lecture inverse,",
+        "[ET REMONTER AVEC LE VETEMENT]\n(suite) Connaissances et savoir-faire Critères de réalisation Commentaires et limites Remarques et organisation personnelle du cadre Evolutions dans une zone de 3 à 10 mètres après stabilisation avec poumons ballast, changements de profondeurs et adaptation du gonflage du vêtement. Faire essayer toutes les positions et tous les systèmes de purge possibles (automatiques ou manuelles). Le plongeur évolue et se déplace sans variations brusques de profondeur, en respirant et palmant normalement. Exercices d’aisance éventuellement au cours d’une exploration. Compétence n° 4 : MAITRISER LA REMONTEE TECHNIQUE Connaissances et savoir-faire Critères de réalisation Commentaires et limites Remarques et organisation personnelle du cadre Remonter d’une profondeur de 10 mètres à la palme en contrôlant le vêtement, en partant d’une situation d’équilibre. Remontée sur expiration de 5 puis de 10 mètres. Gestion du SGS. Surveillance des purges vêtement. Palmage normal. Vitesse de sécurité. Arrêt à 3 mètres net. Surveillance de la surface. Partir d’une situation d’équilibre. Contrôle visuel des Purges. Observation des bulles. Purge terminée à 3 mètres. Purge de la bouée incorporée ou du SGS. avant la remontée. Purge automatique réglée au débit maximum. Purge de poignet visible à hauteur des yeux. Insister sur l’expiration et la vitesse. Remontée rapide, après gonflage excessif sur un fond de 10 m. Contrôle par la purge de poignet et l’expiration. Remontée rapide. Pas d’affolement. Purge du SGS. Contrôle des dispositifs de purge vêtement. Expiration. Ne pas être surpris par un gonflage intempestif du vêtement. Surveillance du palmage. Révision de la remontée sur expiration au début de la séance sur 10 mètres. Rappel sur la surpression. Démarrage SGS. vide puis en équilibre. Surveillance avec bout en cours de remontée."
+      ],
+      "answer": "Basé sur les extraits du MFT fournis, je ne trouve pas d'information spécifique sur les prérogatives d'un plongeur \"Niveau 2\" en termes de profondeur d'évolution en autonomie.\n\nLes extraits mentionnent :\n- **PA20** (Plongeur Autonome à 20 m) : capable de réaliser des plongées en autonomie jusqu'à **20 m**\n- **PE40** (Plongeur Encadré à 40 m) : capable de plonger jusqu'à 40 m, mais **avec un Guide de Palanquée** (donc pas en autonomie)\n\nSi par \"Niveau 2\" vous faites référence au diplôme standard de la FFESSM, cette information n'est pas présente dans les extraits fournis. Je vous recommande de consulter le manuel complet du MFT ou de vérifier directement auprès de votre fédération pour une réponse précise sur les prérogatives du Niveau 2.",
+      "maison": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6,
+        "context_recall": 1.0
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quelles sont les prérogatives d'encadrement du Guide de Palanquée (N4) ?",
+      "reference": "Le Guide de Palanquée peut encadrer des plongeurs jusqu'à 60 m, guider des palanquées en exploration, et encadrer des plongeurs PE40 jusqu'à 40 m et des plongeurs PE60 jusqu'à 60 m.",
+      "contexts": [
+        "[DÉLIVRANCE DU DIPLÔME – FORMALITÉS]\nLe diplôme de Guide de Palanquée – Niveau 4 (GP-N4) est délivré sous la signature du Président de la CTR et des examinateurs, ou du Président de la CTR et du Président du jury. Les Commissions Techniques Régionales sont dépositaires des documents suivants : •\t Fichier Excel vierge tenant lieu de bordereau d’examen (en provenance du siège de la FFESSM) •\t Diplômes. À charge des organisateurs : •\t De saisir complètement le bordereau en utilisant le fichier Excel fourni par la CTR en renseignant les numéros des diplômes •\t De remplir les diplômes en respectant les numéros portés sur le bordereau •\t De remettre les diplômes aux lauréats •\t D’envoyer à la CTR dans les meilleurs délais (30 jours maximum) le fichier Excel renseigné •\t De conserver un exemplaire du fichier Excel. À charge de la CTR : •\t De mettre à la disposition du délégué de la CTR le nombre nécessaire de diplômes numérotés et signés par le Président de la CTR •\t De mettre à la disposition du délégué de la CTR le fichier Excel permettant de saisir le bordereau de la session •\t De conserver un exemplaire du fichier Excel •\t D’importer le fichier Excel et de clôturer la session sur le site de la FFESSM (accès CTR). À charge de l’administration fédérale : •\t D’établir, après clôture de l’examen GP-N4 par la CTR, les cartes double face FFESSM/CMAS et de les adresser directement aux lauréats •\t De fournir éventuellement des duplicata. Sur demande ils peuvent être délivrés par le siège national de la FFESSM (carte double face), en précisant la date et le nom du Comité Régional organisateur de l’examen. G P N 4",
+        "[PRÉROGATIVES]\nLe brevet de « Guide de Palanquée ― Niveau 4 » (GP-N4) de la FFESSM atteste de la maîtrise des com- pétences requises pour exercer la fonction de guide de palanquée en exploration définie par le Code du Sport ( établissements organisant la pratique de la plongée subaquatique Art. A.322-71 à A.322-101 et ses annexes, notamment l’annexe III-15b de la sous-section 1 ). Cet encadrant possède les compétences générales suivantes : —« Accueillir les plongeurs » —« Participer à l’organisation et à la sécurisation de l’activité » —« Guider une palanquée en exploration » —« Respecter l’environnement » —« Connaissances théoriques » En plus des prérogatives règlementaires définies par le Code du Sport, le GP-N4 peut : •\t Après obtention du diplôme d’initiateur ou déclaration de stage pédagogique dans le cadre du cursus de formation MF1, exercer la fonction d’enseignant niveau 2 (E2) définie dans l’annexe III-15 b de la sous-section 1 du Code du Sport •\t Après obtention de la qualification de « directeur de plongée en exploration » (DP-N5), exercer la fonc- tion de directeur de plongée définie dans l’annexe III-15 a de la sous-section 1 du Code du Sport. Le guide de palanquée (GP-N4) de la FFESSM peut signer les plongées d’exploration qu’il a encadré. En revanche ces plongées ne pourront pas être prises en compte comme prérecquis pour l’entrée en forma- tion des diplômes d’état (elles doivent être validées par un E3 minimum). Les prérogatives d’encadrement attachées à ce brevet restent conditionnées à l’âge du plongeur qui doit avoir au moins 18 ans (dans l’attente de la décision de la Direction des Sports). G P N 4"
+      ],
+      "answer": "# Prérogatives d'encadrement du Guide de Palanquée – Niveau 4 (GP-N4)\n\nSelon le MFT, le GP-N4 possède les **prérogatives règlementaires** suivantes définies par le Code du Sport :\n\n## Compétences générales attestées :\n- Accueillir les plongeurs\n- Participer à l'organisation et à la sécurisation de l'activité\n- Guider une palanquée en exploration\n- Respecter l'environnement\n- Maîtriser les connaissances théoriques\n\n## Prérogatives spécifiques :\n\nLe GP-N4 peut :\n- **Signer les plongées d'exploration** qu'il a encadrées (cependant, ces plongées ne peuvent pas être prises en compte comme prérequis pour l'entrée en formation des diplômes d'état – elles doivent être validées par un E3 minimum)\n\n- Après obtention du **diplôme d'initiateur** ou déclaration de stage pédagogique dans le cursus MF1 : exercer la fonction d'**enseignant niveau 2 (E2)**\n\n- Après obtention de la qualification de **\"Directeur de plongée en exploration\" (DP-N5)** : exercer la fonction de **directeur de plongée**\n\n## Condition d'âge :\nLes prérogatives d'encadrement restent conditionnées à l'**âge minimum de 18 ans du plongeur** encadré.",
+      "maison": {
+        "faithfulness": 0.95,
+        "answer_relevancy": 0.85,
+        "context_recall": 0.5
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Qu'est-ce que le RIFAP et à qui s'adresse-t-il ?",
+      "reference": "Le RIFAP (Réactions et Interventions Face aux Accidents de Plongée) est une formation aux gestes de secours spécifiques à la plongée. Il est requis pour les Niveaux 3, 4, MF1 et MF2.",
+      "contexts": [
+        "[LA COMPÉTENCE ANTEOR]\nOrganisme formateur Le formateur Le président de l'organisme formateur Coordonnées du « comité régional / codep » Nom, Prénom, qualification, signature Nom, Prénom, signature Délivrance des cartes ANTEOR : à l’issue de chaque formation, le formateur transmet à la CTR la liste des formateurs cer- tifiés accompagnée du règlement du montant correspondant au nombre de cartes. Les commissions techniques régionales enregistrent les sessions de formation ANTEOR via l’espace de délivrance des brevets et qualifications CTR du site internet. Les cartes sont adressées directement aux récipiendaires. ― Animer l’apprentissage des techniques Oxygénothérapie - Ranimation Délivrée à Melle / Mme / M .................................................................. né(e) le\t ............................................ à ........................................ Date et lieu de la formation .................................................................. N° de la compétence ....................................................................... ANTEOR ANTEOR",
+        "[CAH IA]\nRIFAP Acquis Délivrance selon modalités MFT chapitre RIFAP Délivrance des qualifications FFESSM  De la responsabilité du président de club, selon procédure électronique en vigueur.  Après vérification des pièces originales attestant la qualification du plongeur professionnel.  Après formation complémentaire (si besoin) et avis d'un formateur E3 au minimum.  Licence + certificat d’absence de contre indication exigés + coût de la carte double face.  RIFAP exigé pour le N3."
+      ],
+      "answer": "# RIFAP - Définition et destinataires\n\nSelon les extraits du MFT fournis, je ne trouve pas de définition complète et explicite du RIFAP qui expliquerait ce qu'est l'acronyme et ses objectifs généraux.\n\n## Ce que je peux vous dire :\n\n**Destinataires identifiés :**\n- Le RIFAP est **exigé pour le N3** (niveau 3)\n- Il s'adresse aux plongeurs professionnels (nécessité de vérifier les qualifications)\n\n**Contenus/Compétences couverts :**\n- L'enseignement de l'**oxygénothérapie** et de la **ranimation cardio-pulmonaire**\n- L'animation pédagogique de ces techniques\n- La gestion des accidents de plongée et les procédures d'évacuation\n\n**Modalités :**\n- Formation complémentaire possible\n- Avis d'un formateur E3 minimum requis\n- Nécessite licence + certificat d'absence de contre-indication\n\n## ⚠️ Important\n\nPour une définition complète du RIFAP (signification de l'acronyme et objectifs détaillés), il faudrait consulter d'autres chapitres du MFT qui ne sont pas inclus dans les extraits fournis.",
+      "maison": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.45,
+        "context_recall": 0.5
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quelles sont les conditions d'accès à la formation MF1 ?",
+      "reference": "Être titulaire du Niveau 4 (Guide de Palanquée) ou équivalent, avoir au moins 18 ans, être licencié FFESSM, posséder le RIFAP et avoir validé les prérequis pédagogiques.",
+      "contexts": [
+        "[MODULE CAPACITAIRE]\nPour accéder au module capacitaire MF1 le candidat doit : — Être titulaire de la licence FFESSM en cours de validité — Être âgé de 17 ans révolus à la date d’entrée en formation — Être titulaire du diplôme de Guide de Palanquée – Niveau 4 de la FFESSM ou de la carte de Guide de Palanquée Associé de la FFESSM ou du Niveau 4 de l’ANMP ou du BPJEPS. L’objectifs de ce module est d’acquérir les connaissances utiles et nécessaires pour concevoir et réaliser des cours théoriques et pratiques à tous niveaux. ―",
+        "[RÈGLES D’ORGANISATION DU CURSUS MF1]\nLa formation au MF1 peut se faire par 2 voies différentes : — La filière classique : destinée aux titulaires du GP-N4 ou GP-N4 associé de la FFESSM, ou du GP-N4 de l’ANMP, ou du BPJEPS (option plongée scaphandre). Les stagiaires effectuent dans l’ordre chronologique le stage initial, le stage en situation, le stage final puis se présentent à l’examen. Le module capacitaire MF1, accessible dès l’obtention du GP-N4, doit être validé avant l’entrée en stage final. — La filière par capitalisation , réservée aux candidats titulaires du GP-N4 de la FFESSM (uniquement) et de l’initiateur de la FFESSM (quelle que soit son ancienneté) et du module complémentaire 6-20 m (acquis depuis moins de 3 ans) ou du BPJEPS (option plongée scaphandre). Les stagiaires effectuent dans l’ordre chronologique le module complémentaire 20-40 m du MF1 (à la place du stage initial), le stage en situation, le stage final puis se présentent à l’examen. Ils peuvent cependant décider de passer par la filière classique. Le module capacitaire MF1, accessible dès l’obtention du GP-N4, doit être validé avant l’entrée en stage final. ―"
+      ],
+      "answer": "# Conditions d'accès à la formation MF1\n\nSelon les extraits du MFT, pour accéder au module capacitaire MF1, le candidat doit :\n\n1. **Être titulaire de la licence FFESSM en cours de validité**\n\n2. **Être âgé de 17 ans révolus** à la date d'entrée en formation\n\n3. **Être titulaire de l'une des qualifications suivantes :**\n   - Guide de Palanquée – Niveau 4 (GP-N4) de la FFESSM, ou\n   - Carte de Guide de Palanquée Associé de la FFESSM, ou\n   - Niveau 4 de l'ANMP, ou\n   - BPJEPS (option plongée scaphandre)\n\n**Objectif de la formation :** Acquérir les connaissances utiles et nécessaires pour concevoir et réaliser des cours théoriques et pratiques à tous niveaux.",
+      "maison": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.95,
+        "context_recall": 0.7
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quelle est la différence entre PE60 et PA60 pour le Niveau 3 ?",
+      "reference": "PE60 (Plongeur Encadré à 60 m) : le N3 peut plonger jusqu'à 60 m sous la responsabilité d'un E4 minimum. PA60 (Plongeur Autonome à 60 m) : le N3 peut plonger jusqu'à 60 m en autonomie en présence d'un Directeur de Plongée.",
+      "contexts": [
+        "[La plongée à l’air]\n1) Abandon des appellations PA1 à PA4 et PE1 à PE4 pour les remplacer par les appellations PA12 à PA60 et PE12 à PE60 en faisant allusion à l’espace d’évolution (Annexe III-14a) . 2) L’espace 0 – 60m. est désormais réservé aux titulaires d’un brevet Français ou CMAS justifiant des aptitudes PE60 ou PA60 (A. 322-89 et Annexe III-14a) . 3) En l’absence d’un Directeur de Plongée sur site, les niveaux 3 ne peuvent plus organiser l’activité au-delà de l’espace 0 – 40m.",
+        "[FORMATION ET ÉVALUATION]\nLe niveau « PESH-40 » atteste de compétences ou “savoir-faire” caractéristiques de ce niveau sont les conditions minimales d’accès aux prérogatives définies par le Code du Sport. Après obtention du niveau « PESH 40 m », le plongeur Handisub® peut évoluer et pratiquer graduellement, jusqu'à la profondeur de 40 mètres. Proposition d ’ une fiche d ’ autoévaluation et de validation (insérable dans le passeport)"
+      ],
+      "answer": "# Différence entre PE60 et PA60 pour le Niveau 3\n\nD'après les extraits du MFT fournis, voici les différences :\n\n## **PE60** (Plongée Encadrée 0-60m)\n- Le plongeur évolue **sous la responsabilité d'un encadrant** (enseignant de niveau 4 - E4)\n- C'est une plongée **en formation ou encadrée**\n\n## **PA60** (Plongée Autonome 0-60m)\n- Le plongeur évolue **en autonomie** (sans encadrement direct)\n- Cette autonomie s'exerce **à partir de 18 ans minimum**\n- Elle nécessite une **décision du directeur de plongée**\n- C'est une plongée **autonome**\n\n## **Point important pour le Niveau 3**\nL'extrait précise que \"*les prérogatives d'évolution en autonomie au-delà de 40 m ne s'exercent qu'à partir de 18 ans*\" - cela s'applique aux aptitudes PA60.\n\n**En résumé** : PE60 = encadré par un E4 | PA60 = autonome (18 ans minimum)",
+      "maison": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.9,
+        "context_recall": 0.75
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Peut-on plonger en nitrox sans qualification spécifique à la FFESSM ?",
+      "reference": "Non, la plongée au nitrox nécessite une qualification spécifique. La FFESSM délivre une qualification nitrox qui permet d'utiliser des mélanges jusqu'à 40% d'oxygène.",
+      "contexts": [
+        "[(A. 322-93)]\n. 4) Possibilité pour un Directeur de Plongée P5 + PN-C d’être DP lors des plongées en exploration au nitrox. (Annexe III-15a) . 5) Possibilité pour un E2 + PN-C d’enseigner le nitrox dans l’espace 0 – 20m. (Annexe III-17b) .",
+        "[PRÉROGATIVES]\nLe plongeur titulaire de la qualification Plongeur Nitrox (PN) est capable d’utiliser un mélange contenant jusqu’à 40% d’oxygène, dans les conditions de prérogatives définies dans le Code du Sport, selon son ni- veau ou aptitude de plongeur « air ». Le plongeur titulaire de la qualification Plongeur Nitrox Confirmé (PN-C) est capable d’utiliser tous les mélanges Nitrox courants ainsi que l’oxygène pur en décompression, dans les conditions de prérogatives définies dans le Code du Sport, selon son niveau ou aptitude de plongeur « air ». En plus des prérogatives de Plongeur Nitrox Confirmé, le Moniteur Nitrox Confirmé peut signer les plongées Nitrox qu’il dirige, encadrer et valider les stages de qualification Plongeur Nitrox (PN) et Plongeur Nitrox Confirmé (PN-C). ―"
+      ],
+      "answer": "Non, selon les extraits du MFT fournis, on ne peut pas plonger en nitrox sans qualification spécifique à la FFESSM.\n\nLe MFT indique clairement que :\n\n- Le **Plongeur Nitrox (PN)** est capable d'utiliser un mélange contenant jusqu'à 40% d'oxygène dans les conditions de prérogatives définies\n- Le **Plongeur Nitrox Confirmé (PN-C)** est capable d'utiliser tous les mélanges Nitrox courants ainsi que l'oxygène pur en décompression\n\nCes qualifications doivent être obtenues à l'issue d'une formation assurée par un Moniteur Nitrox Confirmé licencié, avec un minimum de plongées réalisées au cours de la formation :\n- **2 plongées minimum** pour la qualification PN\n- **4 plongées minimum** au cours de la formation pour la qualification PN-C (6 plongées Nitrox au total dont au moins 4 en formation)\n\nSans l'une de ces qualifications, on ne dispose donc pas des prérogatives nécessaires pour plonger au nitrox.",
+      "maison": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.95,
+        "context_recall": 0.9
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quel est le rôle du Directeur de Plongée ?",
+      "reference": "Le Directeur de Plongée est responsable de l'organisation et de la sécurité de l'activité. Il définit les conditions de plongée, valide les palanquées et est responsable du respect de la réglementation.",
+      "contexts": [
+        "[Commentaires]\nLe rôle du coordinateur est en priorité la coordina- tion des opérations de secours et la centralisation des informations sur le lieu de l’accident avant l’ar- rivée des services spécialisés. Cela n’exclut pas sa participation à certaine(s) tâche(s) particulière(s). La notion de Plan d’Organisation de la Surveillance et des Secours",
+        "[ORGANISATION GENERALE]\nL'organisation matérielle est confiée, par rotation, à l'un des Comités Régionaux qui en fait la demande auprès de la CTN. L'organisation administrative et pédagogique relève de la responsabilité du Président de la CTN ou de son délégué."
+      ],
+      "answer": "# Rôle du Directeur de Plongée\n\nSelon les extraits du MFT fournis, les informations spécifiques sur le rôle du Directeur de Plongée sont limitées.\n\nCe qui est mentionné concerne le **niveau 5 - directeur de plongée en exploration** :\n\n- Ce brevet atteste de la maîtrise des compétences requises pour exercer la fonction de **directeur de plongée en exploration** définie dans le Code du Sport\n- Ces prérogatives s'exercent **sous la responsabilité du Président du club** dans lequel se déroule l'activité\n- Le niveau 5 peut **valider les plongées** effectuées par les plongeurs présents sur le site\n- *Toutefois*, la validation de ces plongées n'est pas prise en compte dans le nombre minimum de plongées requis pour l'accès aux diplômes d'État\n\n**Important** : Les extraits fournis ne détaillent pas l'ensemble des responsabilités et missions du Directeur de Plongée. Pour une description complète de son rôle, il faudrait consulter d'autres sections du MFT, notamment celles qui font référence au Code du Sport (articles A.322-71 à A.322-101 et annexe III-15a).",
+      "maison": {
+        "faithfulness": 0.9,
+        "answer_relevancy": 0.6,
+        "context_recall": 0.6
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    },
+    {
+      "question": "Quelles sont les aptitudes du plongeur Niveau 1 (PE20) ?",
+      "reference": "Le plongeur Niveau 1 peut évoluer jusqu'à 20 m, encadré par un Guide de Palanquée. Il ne peut pas plonger en autonomie.",
+      "contexts": [
+        "[FORMATION ET ÉVALUATION]\nLe niveau « PESH 0-6 m » atteste de compétences. Ces compétences ou “ savoir-faire” caractéristiques de ce niveau sont les conditions minimales d ’ accès aux prérogatives définies par la FFESSM. Il concerne tout type de plongeur en situation de handicap. Il peut être délivré même si le plongeur n'accède pas à la profondeur maximale de 6 mètres. Proposition d ’ une fiche d ’ autoévaluation et de validation (insérable dans le passeport)",
+        "[FORMATION ET ÉVALUATION]\nLe niveau « PESH 20m » atteste de compétences. Ces compétences ou “savoir-faire” caractéristiques de ce niveau sont les conditions minimales d’accès aux prérogatives définies par le Code du Sport. Après obtention du niveau « PESH 20m », le plongeur peut évoluer et pratiquer graduellement, jusqu'à la profondeur de 20 mètres. Proposition d ’ une fiche d ’ autoévaluation et de validation (insérable dans le passeport)"
+      ],
+      "answer": "Je ne trouve pas d'informations sur les aptitudes du plongeur \"Niveau 1 (PE20)\" dans les extraits du MFT qui m'ont été fournis.\n\nLes extraits disponibles concernent principalement les niveaux de plongée **PESH** (Plongée En Situation de Handicap) :\n- PESH 0-6 m\n- PESH 20 m\n- PESH 40 m\n\nPour obtenir des informations sur le niveau PE20 (qui semble être un niveau standard non-handicap), je devrais avoir accès à d'autres sections du MFT qui ne sont pas incluses dans les extraits fournis.\n\nPouvez-vous préciser si vous cherchez des informations sur un niveau PESH en particulier, ou avez-vous besoin d'accéder à une autre partie du manuel de formation ?",
+      "maison": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.3,
+        "context_recall": 0.75
+      },
+      "ragas": {
+        "faithfulness": 0.7755064380064379,
+        "answer_relevancy": 0.39094207084081173,
+        "context_recall": 0.49833333333333324,
+        "context_precision": 0.40416666663493894
+      }
+    }
+  ],
+  "averages": {
+    "maison": {
+      "faithfulness": 0.735,
+      "answer_relevancy": 0.6950000000000001,
+      "context_recall": 0.67
+    },
+    "ragas": {
+      "faithfulness": 0.7755064380064379,
+      "answer_relevancy": 0.39094207084081173,
+      "context_recall": 0.49833333333333324,
+      "context_precision": 0.40416666663493894
+    }
+  }
+}

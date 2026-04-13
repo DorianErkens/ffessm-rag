@@ -34,32 +34,50 @@ from evaluate import (
 
 # ─── Imports RAGAS 0.4.x ─────────────────────────────────────────────────────
 from ragas import EvaluationDataset, SingleTurnSample, evaluate as ragas_evaluate
-from ragas.metrics.collections import (
-    faithfulness as ragas_faithfulness,
-    answer_relevancy as ragas_answer_relevancy,
-    context_recall as ragas_context_recall,
-    context_precision as ragas_context_precision,
-)
-from ragas.llms import LangchainLLMWrapper
+from ragas.metrics._faithfulness import faithfulness as ragas_faithfulness
+from ragas.metrics._answer_relevance import answer_relevancy as ragas_answer_relevancy
+from ragas.metrics._context_recall import context_recall as ragas_context_recall
+from ragas.metrics._context_precision import context_precision as ragas_context_precision
+from ragas.llms import llm_factory
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_anthropic import ChatAnthropic
-from langchain_community.embeddings import HuggingFaceEmbeddings
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings as LCHFEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings as LCHFEmbeddings
 
 
-def build_ragas_llm() -> LangchainLLMWrapper:
-    """Claude Haiku comme juge LLM pour RAGAS — cohérent avec evaluate.py."""
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20251001",
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
-        max_tokens=512,
-    )
-    return LangchainLLMWrapper(llm)
+def build_ragas_llm():
+    """
+    Claude Haiku via llm_factory RAGAS 0.4 (InstructorLLM).
+    Patch nécessaire : Instructor envoie temperature + top_p simultanément,
+    mais l'API Anthropic refuse les deux en même temps (400).
+    On intercepte messages.create pour supprimer top_p si temperature est présent.
+    """
+    class _MessagesWrapper:
+        def __init__(self, messages):
+            self._messages = messages
+
+        def create(self, **kwargs):
+            if "temperature" in kwargs and "top_p" in kwargs:
+                del kwargs["top_p"]
+            return self._messages.create(**kwargs)
+
+        def __getattr__(self, name):
+            return getattr(self._messages, name)
+
+    class _AnthropicNoPTopP(anthropic.Anthropic):
+        @property
+        def messages(self):
+            return _MessagesWrapper(super().messages)
+
+    client = _AnthropicNoPTopP(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    return llm_factory("claude-haiku-4-5-20251001", provider="anthropic", client=client, max_tokens=4096)
 
 
 def build_ragas_embeddings() -> LangchainEmbeddingsWrapper:
-    """Même SentenceTransformer que l'ingestion — cohérence garantie."""
-    emb = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-    return LangchainEmbeddingsWrapper(emb)
+    """Même SentenceTransformer que l'ingestion, via LangchainEmbeddingsWrapper (fournit embed_query)."""
+    lc_emb = LCHFEmbeddings(model_name=EMBEDDING_MODEL)
+    return LangchainEmbeddingsWrapper(lc_emb)
 
 
 def run_maison_scores(samples: list[dict], claude) -> list[dict]:
@@ -89,12 +107,13 @@ def run_ragas_scores(samples: list[dict], ragas_llm, ragas_emb) -> dict:
     """
     print("\n🔬 Calcul des scores RAGAS...")
 
-    # Configure les métriques avec le LLM et les embeddings
+    # Singletons RAGAS configurés avec notre LLM/embeddings
+    ragas_faithfulness.llm = ragas_llm
+    ragas_answer_relevancy.llm = ragas_llm
+    ragas_answer_relevancy.embeddings = ragas_emb
+    ragas_context_recall.llm = ragas_llm
+    ragas_context_precision.llm = ragas_llm
     metrics = [ragas_faithfulness, ragas_answer_relevancy, ragas_context_recall, ragas_context_precision]
-    for m in metrics:
-        m.llm = ragas_llm
-        if hasattr(m, "embeddings"):
-            m.embeddings = ragas_emb
 
     dataset = EvaluationDataset(samples=[
         SingleTurnSample(
